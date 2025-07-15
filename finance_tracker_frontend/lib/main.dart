@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/auth_service.dart';
 
 // Define color constants for the modern dark theme
 const Color kPrimaryColor = Color(0xFFd21947);
@@ -74,15 +75,28 @@ class AuthNavigation extends StatefulWidget {
   State<AuthNavigation> createState() => _AuthNavigationState();
 }
 
+///
+/// Handles authentication state & navigation.
+///
 class _AuthNavigationState extends State<AuthNavigation> {
   bool _isAuthenticated = false;
   bool _showLogin = true;
 
-  // Placeholder: simulate user auth and page switching.
-  void _onAuthenticated() {
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    final auth = await AuthService.isAuthenticated();
     setState(() {
-      _isAuthenticated = true;
+      _isAuthenticated = auth;
     });
+  }
+
+  void _onAuthenticated() async {
+    await _checkAuth();
   }
 
   void _onSwitchToRegister() {
@@ -97,10 +111,18 @@ class _AuthNavigationState extends State<AuthNavigation> {
     });
   }
 
+  void _onLogout() async {
+    await AuthService.logout();
+    setState(() {
+      _isAuthenticated = false;
+      _showLogin = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isAuthenticated) {
-      return const MainScaffold();
+      return MainScaffold(onLogout: _onLogout);
     }
     return _showLogin
         ? LoginScreen(
@@ -108,7 +130,7 @@ class _AuthNavigationState extends State<AuthNavigation> {
             onSwitchToRegister: _onSwitchToRegister,
           )
         : RegisterScreen(
-            onRegister: _onAuthenticated,
+            onRegister: _onSwitchToLogin, // after register go to login
             onSwitchToLogin: _onSwitchToLogin,
           );
   }
@@ -120,7 +142,8 @@ class _AuthNavigationState extends State<AuthNavigation> {
 /// Main app shell with bottom navigation between Dashboard, Transactions, Budgets, and Charts.
 ///
 class MainScaffold extends StatefulWidget {
-  const MainScaffold({super.key});
+  final VoidCallback? onLogout;
+  const MainScaffold({super.key, this.onLogout});
 
   @override
   State<MainScaffold> createState() => _MainScaffoldState();
@@ -164,6 +187,17 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Finance Tracker'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: kAccentColor),
+            tooltip: 'Logout',
+            onPressed: widget.onLogout,
+          ),
+        ],
+        backgroundColor: kSecondaryColor,
+      ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         items: _bottomNavItems,
@@ -180,7 +214,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 /// PUBLIC_INTERFACE
 /// Modern, minimalistic placeholder for Login.
 ///
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   final VoidCallback onLogin;
   final VoidCallback onSwitchToRegister;
   const LoginScreen({
@@ -188,6 +222,32 @@ class LoginScreen extends StatelessWidget {
     required this.onLogin,
     required this.onSwitchToRegister,
   });
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _pwdCtrl = TextEditingController();
+  bool _loading = false;
+  String? _error;
+
+  void _handleLogin() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final result = await AuthService.login(_emailCtrl.text.trim(), _pwdCtrl.text);
+    setState(() => _loading = false);
+    if (result['success'] == true) {
+      widget.onLogin();
+    } else {
+      setState(() {
+        _error = result['message'] ?? 'Login failed';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +275,9 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 TextField(
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.username, AutofillHints.email],
                   decoration: InputDecoration(
                       filled: true,
                       fillColor: kSecondaryColor,
@@ -224,7 +287,9 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  controller: _pwdCtrl,
                   obscureText: true,
+                  autofillHints: const [AutofillHints.password],
                   decoration: InputDecoration(
                       filled: true,
                       fillColor: kSecondaryColor,
@@ -232,18 +297,31 @@ class LoginScreen extends StatelessWidget {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))
                   ),
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!, style: const TextStyle(color: Colors.red))
+                ],
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: onLogin,
+                  onPressed: _loading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimaryColor,
                     minimumSize: const Size.fromHeight(48),
                   ),
-                  child: const Text('Login', style: TextStyle(color: Colors.white)),
+                  child: _loading
+                      ? const SizedBox(
+                          height: 28,
+                          width: 28,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Login', style: TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: onSwitchToRegister,
+                  onPressed: _loading ? null : widget.onSwitchToRegister,
                   child: const Text(
                     'Don\'t have an account? Register',
                     style: TextStyle(color: kAccentColor),
@@ -263,7 +341,7 @@ class LoginScreen extends StatelessWidget {
 /// PUBLIC_INTERFACE
 /// Modern, minimalistic placeholder for Register.
 ///
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   final VoidCallback onRegister;
   final VoidCallback onSwitchToLogin;
   const RegisterScreen({
@@ -271,6 +349,56 @@ class RegisterScreen extends StatelessWidget {
     required this.onRegister,
     required this.onSwitchToLogin,
   });
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _pwdCtrl = TextEditingController();
+  final TextEditingController _confirmCtrl = TextEditingController();
+  bool _loading = false;
+  String? _error;
+  String? _success;
+
+  void _handleRegister() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _success = null;
+    });
+
+    if (_emailCtrl.text.trim().isEmpty || _pwdCtrl.text.isEmpty) {
+      setState(() {
+        _error = "Email and password are required.";
+        _loading = false;
+      });
+      return;
+    } else if (_pwdCtrl.text != _confirmCtrl.text) {
+      setState(() {
+        _error = "Passwords do not match.";
+        _loading = false;
+      });
+      return;
+    }
+    final result = await AuthService.register(
+      _emailCtrl.text.trim(),
+      _pwdCtrl.text,
+    );
+    setState(() {
+      _loading = false;
+      if (result['success'] == true) {
+        _success = result['message'] ?? "Registration successful. Please log in.";
+      } else {
+        _error = result['message'] ?? "Registration failed.";
+      }
+    });
+    if (result['success'] == true) {
+      await Future.delayed(const Duration(seconds: 2));
+      widget.onRegister();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -298,6 +426,9 @@ class RegisterScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 TextField(
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.username, AutofillHints.email],
                   decoration: InputDecoration(
                       filled: true,
                       fillColor: kSecondaryColor,
@@ -306,34 +437,55 @@ class RegisterScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  controller: _pwdCtrl,
                   decoration: InputDecoration(
                       filled: true,
                       fillColor: kSecondaryColor,
                       hintText: 'Password',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                   obscureText: true,
+                  autofillHints: const [AutofillHints.newPassword],
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  controller: _confirmCtrl,
                   decoration: InputDecoration(
                       filled: true,
                       fillColor: kSecondaryColor,
                       hintText: 'Confirm Password',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                   obscureText: true,
+                  autofillHints: const [AutofillHints.newPassword],
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                ],
+                if (_success != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_success!, style: const TextStyle(color: Colors.greenAccent)),
+                ],
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: onRegister,
+                  onPressed: _loading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimaryColor,
                     minimumSize: const Size.fromHeight(48),
                   ),
-                  child: const Text('Register', style: TextStyle(color: Colors.white)),
+                  child: _loading
+                      ? const SizedBox(
+                          height: 28,
+                          width: 28,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Register', style: TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: onSwitchToLogin,
+                  onPressed: _loading ? null : widget.onSwitchToLogin,
                   child: const Text(
                     'Already have an account? Login',
                     style: TextStyle(color: kAccentColor),
