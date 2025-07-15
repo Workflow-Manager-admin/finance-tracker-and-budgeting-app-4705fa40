@@ -87,13 +87,13 @@ class FinanceTrackerApp extends StatelessWidget {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             ),
             foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
-            overlayColor: WidgetStateProperty.all<Color>(kAccentColor.withOpacity(0.08)),
+            overlayColor: WidgetStateProperty.all<Color>(kAccentColor.withValues(alpha: (0.08 * 255))),
             textStyle: WidgetStateProperty.all<TextStyle>(
               GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600),
             ),
             padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
                 const EdgeInsets.symmetric(vertical: 16, horizontal: 24)),
-            shadowColor: WidgetStateProperty.all<Color>(kPrimaryColor.withOpacity(0.25)),
+            shadowColor: WidgetStateProperty.all<Color>(kPrimaryColor.withValues(alpha: (0.25 * 255))),
           ),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -109,7 +109,7 @@ class FinanceTrackerApp extends StatelessWidget {
           elevation: kCardElevation,
           margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-          shadowColor: kPrimaryColor.withOpacity(0.18),
+          shadowColor: kPrimaryColor.withValues(alpha: (0.18 * 255)),
         ),
         textTheme: GoogleFonts.interTextTheme(baseTextTheme).copyWith(
           displayLarge: GoogleFonts.inter(
@@ -965,10 +965,10 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
   }
 
   Future<void> _pickDate() async {
-    // Store context in local variable to avoid use_build_context_synchronously lint
-    final localContext = context;
+    // Avoid using context across async gap by storing locally for showDatePicker call
+    final ctx = context;
     final picked = await showDatePicker(
-      context: localContext,
+      context: ctx,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2010),
       lastDate: DateTime(2100),

@@ -57,8 +57,8 @@ class TransactionListTile extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: transaction['amount'] >= 0
-                        ? Colors.greenAccent.withOpacity(0.11)
-                        : Colors.redAccent.withOpacity(0.18),
+                        ? Colors.greenAccent.withValues(alpha: 0.11 * 255)
+                        : Colors.redAccent.withValues(alpha: 0.18 * 255),
                     blurRadius: 8,
                     offset: const Offset(0, 6),
                   ),
@@ -66,22 +66,14 @@ class TransactionListTile extends StatelessWidget {
                 border: Border.all(
                   width: 1,
                   color: transaction['amount'] >= 0
-                      ? Colors.greenAccent.withOpacity(0.08)
-                      : Colors.redAccent.withOpacity(0.12),
+                      ? Colors.greenAccent.withValues(alpha: 0.08 * 255)
+                      : Colors.redAccent.withValues(alpha: 0.12 * 255),
                 ),
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
                 leading: CircleAvatar(
                   radius: 22,
-                  background: Paint()..shader = RadialGradient(
-                    colors: [
-                      transaction['amount'] >= 0
-                          ? Colors.greenAccent.withOpacity(0.65)
-                          : Colors.redAccent.withOpacity(0.68),
-                      Colors.transparent,
-                    ],
-                  ).createShader(const Rect.fromLTWH(0,0,44,44)),
                   backgroundColor: Colors.transparent,
                   child: Icon(
                     transaction['amount'] >= 0 ? Icons.south_west : Icons.north_east,
@@ -166,8 +158,8 @@ class BudgetCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            color.withOpacity(0.94),
-            color.withOpacity(0.77),
+            color.withValues(alpha: 0.94 * 255),
+            color.withValues(alpha: 0.77 * 255),
             Colors.black12,
           ],
           begin: Alignment.topLeft,
@@ -177,7 +169,7 @@ class BudgetCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(kCardRadius),
         boxShadow: [
           BoxShadow(
-            color: statusColor.withOpacity(0.13),
+            color: statusColor.withValues(alpha: 0.13 * 255),
             blurRadius: 10,
             offset: const Offset(3, 5),
           )
