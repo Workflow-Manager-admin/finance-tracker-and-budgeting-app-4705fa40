@@ -1,4 +1,3 @@
-// All imports must be at the very top!
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 import 'widgets/finance_widgets.dart';
@@ -252,21 +251,51 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Triggered when user presses Login button
   void _handleLogin() async {
-    final navContext = context; // capture context before async
     setState(() {
       _loading = true;
       _error = null;
     });
-    final result = await AuthService.login(_emailCtrl.text.trim(), _pwdCtrl.text);
-    if (!mounted) return;
-    if (result['success'] == true) {
-      _navigateToDashboard(navContext);
-      return;
+    Map<String, dynamic> result = {};
+    try {
+      result = await AuthService.login(_emailCtrl.text.trim(), _pwdCtrl.text);
+      if (!mounted) return;
+      if (result['success'] == true) {
+        _navigateToDashboard(context);
+        return;
+      }
+      setState(() {
+        _error = result['message'] ?? 'Login failed';
+      });
+      // Log unexpected unsuccessful logins for diagnostics
+      debugPrint("[LoginScreen] Login failed: ${result['message']}");
+    } catch (e, st) {
+      debugPrint('[LoginScreen] Uncaught exception during login: $e\n$st');
+      if (mounted) {
+        setState(() {
+          _error = 'An unexpected error occurred. Please try again.';
+        });
+        // Optionally, show a dialog here as well
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Login Error'),
+            content: Text('$e'),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
-    setState(() {
-      _loading = false;
-      _error = result['message'] ?? 'Login failed';
-    });
   }
 
   @override

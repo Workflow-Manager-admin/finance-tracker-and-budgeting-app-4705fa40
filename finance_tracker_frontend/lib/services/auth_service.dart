@@ -2,6 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 /// PUBLIC_INTERFACE
 /// AuthService handles registration, login, JWT storage, and token fetch for API requests.
@@ -42,31 +43,41 @@ class AuthService {
           final data = json.decode(resp.body);
           if (data['access_token'] != null) {
             await _setJwtToken(data['access_token']);
+            debugPrint("[AuthService] Login successful, JWT stored.");
             return {"success": true, "message": "Login successful."};
           } else if (data['detail'] != null) {
+            debugPrint("[AuthService] Login failed: ${data['detail']}");
             return {"success": false, "message": data['detail']};
           }
+          debugPrint("[AuthService] Login malformed response: $data");
           return {"success": false, "message": "Malformed response from server."};
         } catch (e) {
+          debugPrint("[AuthService] Login parse error: $e");
           return {"success": false, "message": "Failed to parse server response."};
         }
       } else if (resp.statusCode == 401) {
         // Unauthorized (bad credentials)
+        debugPrint("[AuthService] Login 401 Unauthorized: Invalid credentials.");
         return {"success": false, "message": "Invalid credentials."};
       } else {
         // Try to get error details from server if available
         try {
           final err = json.decode(resp.body);
+          debugPrint("[AuthService] Login error: $err");
           return {"success": false, "message": err['detail'] ?? "Login failed."};
-        } catch (_) {
+        } catch (ex) {
+          debugPrint("[AuthService] Login (bad server error response): $ex, status: ${resp.statusCode}");
           return {"success": false, "message": "Invalid credentials or server error."};
         }
       }
-    } on TimeoutException {
+    } on TimeoutException catch (tmo) {
+      debugPrint("[AuthService] Login timed out: $tmo");
       return {"success": false, "message": "Request timed out. Please try again."};
     } on http.ClientException catch (e) {
+      debugPrint("[AuthService] Network error: ${e.message}");
       return {"success": false, "message": "Network error: ${e.message}"};
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[AuthService] Unexpected error: $e\n$st');
       return {"success": false, "message": "An unexpected error occurred: $e"};
     }
   }
