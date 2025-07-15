@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 /// PUBLIC_INTERFACE
 /// AuthService handles registration, login, JWT storage, and token fetch for API requests.
@@ -16,18 +17,27 @@ class AuthService {
   static Future<Map<String, dynamic>> login(String email, String password) async {
     final url = Uri.parse("$apiBaseUrl/auth/login");
     final body = json.encode({"email": email, "password": password});
-    final resp = await http.post(url,
-        headers: {"Content-Type": "application/json"}, body: body);
+    try {
+      final resp = await http.post(url,
+          headers: {"Content-Type": "application/json"}, body: body)
+          .timeout(const Duration(seconds: 12));
 
-    if (resp.statusCode == 200) {
-      var data = json.decode(resp.body);
-      if (data['access_token'] != null) {
-        await _setJwtToken(data['access_token']);
-        return {"success": true, "message": "Login successful."};
+      if (resp.statusCode == 200) {
+        var data = json.decode(resp.body);
+        if (data['access_token'] != null) {
+          await _setJwtToken(data['access_token']);
+          return {"success": true, "message": "Login successful."};
+        }
+        return {"success": false, "message": data['detail'] ?? "Unknown error"};
+      } else {
+        return {"success": false, "message": "Invalid credentials or server error."};
       }
-      return {"success": false, "message": data['detail'] ?? "Unknown error"};
-    } else {
-      return {"success": false, "message": "Invalid credentials or server error."};
+    } on TimeoutException {
+      return {"success": false, "message": "Request timed out. Please try again."};
+    } on http.ClientException catch (e) {
+      return {"success": false, "message": "Network error: ${e.message}"};
+    } catch (e) {
+      return {"success": false, "message": "An unexpected error occurred: $e"};
     }
   }
 
@@ -36,18 +46,27 @@ class AuthService {
   static Future<Map<String, dynamic>> register(String email, String password) async {
     final url = Uri.parse("$apiBaseUrl/auth/register");
     final body = json.encode({"email": email, "password": password});
-    final resp = await http.post(url,
-        headers: {"Content-Type": "application/json"}, body: body);
+    try {
+      final resp = await http.post(url,
+          headers: {"Content-Type": "application/json"}, body: body)
+          .timeout(const Duration(seconds: 12));
 
-    if (resp.statusCode == 200 || resp.statusCode == 201) {
-      return {"success": true, "message": "Registration successful. Please log in."};
-    } else {
-      try {
-        final data = json.decode(resp.body);
-        return {"success": false, "message": data['detail'] ?? "Unknown error."};
-      } catch (_) {
-        return {"success": false, "message": "Registration failed."};
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        return {"success": true, "message": "Registration successful. Please log in."};
+      } else {
+        try {
+          final data = json.decode(resp.body);
+          return {"success": false, "message": data['detail'] ?? "Unknown error."};
+        } catch (_) {
+          return {"success": false, "message": "Registration failed."};
+        }
       }
+    } on http.ClientException catch (e) {
+      return {"success": false, "message": "Network error: ${e.message}"};
+    } on TimeoutException {
+      return {"success": false, "message": "Request timed out. Please try again."};
+    } catch (e) {
+      return {"success": false, "message": "An unexpected error occurred: $e"};
     }
   }
 
