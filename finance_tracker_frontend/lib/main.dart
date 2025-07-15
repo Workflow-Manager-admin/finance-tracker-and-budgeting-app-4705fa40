@@ -502,6 +502,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final didSucceed = await _performRegister();
     if (!mounted) return;
     if (didSucceed) {
+      if (!mounted) return;
       widget.onRegister();
     }
   }
