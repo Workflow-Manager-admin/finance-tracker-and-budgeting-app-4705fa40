@@ -528,13 +528,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _fetchRecent();
   }
 
+  String? _error;
+
   Future<void> _fetchRecent() async {
-    setState(() => _loading = true);
-    final data = await TransactionService.fetchTransactions();
     setState(() {
-      _transactions = data;
-      _loading = false;
+      _loading = true;
+      _error = null;
     });
+    try {
+      final data = await TransactionService.fetchTransactions();
+      setState(() {
+        _transactions = data;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = "Failed to fetch transactions.";
+      });
+    }
   }
 
   void _goToAddTransaction() {
@@ -552,15 +564,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: kAccentColor))
-          : RefreshIndicator(
-              color: kAccentColor,
-              onRefresh: _fetchRecent,
-              child: ListView(
-                padding: const EdgeInsets.all(12),
-                children: [
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                    padding: const EdgeInsets.all(22),
+          : _error != null
+              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)))
+              : RefreshIndicator(
+                  color: kAccentColor,
+                  onRefresh: _fetchRecent,
+                  child: ListView(
+                    padding: const EdgeInsets.all(12),
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                        padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
                       color: kCardColor,
                       borderRadius: BorderRadius.circular(24),
@@ -644,6 +658,7 @@ class TransactionsScreen extends StatefulWidget {
 class _TransactionsScreenState extends State<TransactionsScreen> {
   List<Map<String, dynamic>> _transactions = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -652,12 +667,22 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _fetchTransactions() async {
-    setState(() => _loading = true);
-    final tx = await TransactionService.fetchTransactions();
     setState(() {
-      _transactions = tx;
-      _loading = false;
+      _loading = true;
+      _error = null;
     });
+    try {
+      final tx = await TransactionService.fetchTransactions();
+      setState(() {
+        _transactions = tx;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = "Failed to fetch transactions.";
+      });
+    }
   }
 
   void _goToAdd() {
@@ -699,32 +724,42 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: kAccentColor))
-          : RefreshIndicator(
-              color: kAccentColor,
-              onRefresh: _fetchTransactions,
-              child: _transactions.isEmpty
-                  ? const Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)))
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(top: 10, left: 8, right: 8),
-                      itemCount: _transactions.length,
-                      itemBuilder: (ctx, i) {
-                        final t = _transactions[i];
-                        return TransactionListTile(
-                          transaction: t,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (ctx) =>
-                                    TransactionEditScreen(transaction: t, onSave: _fetchTransactions),
-                              ),
+          : _error != null
+              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)))
+              : RefreshIndicator(
+                  color: kAccentColor,
+                  onRefresh: _fetchTransactions,
+                  child: _transactions.isEmpty
+                      ? const Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)))
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(top: 10, left: 8, right: 8),
+                          itemCount: _transactions.length,
+                          itemBuilder: (ctx, i) {
+                            final t = _transactions[i];
+                            return TransactionListTile(
+                              transaction: t,
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (ctx) =>
+                                        TransactionEditScreen(transaction: t, onSave: _fetchTransactions),
+                                  ),
+                                );
+                              },
+                              onDelete: () async {
+                                try {
+                                  await _deleteTx(t['id'] as int);
+                                } catch (e) {
+                                  setState(() {
+                                    _error = "Failed to delete transaction.";
+                                  });
+                                }
+                              },
+                              color: kCardColor,
                             );
                           },
-                          onDelete: () => _deleteTx(t['id'] as int),
-                          color: kCardColor,
-                        );
-                      },
-                    ),
-            ),
+                        ),
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: _goToAdd,
         tooltip: 'Add Transaction',
@@ -948,6 +983,7 @@ class BudgetsScreen extends StatefulWidget {
 class _BudgetsScreenState extends State<BudgetsScreen> {
   List<Map<String, dynamic>> _budgets = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -956,12 +992,22 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _fetchBudgets() async {
-    setState(() => _loading = true);
-    final b = await BudgetService.fetchBudgets();
     setState(() {
-      _budgets = b;
-      _loading = false;
+      _loading = true;
+      _error = null;
     });
+    try {
+      final b = await BudgetService.fetchBudgets();
+      setState(() {
+        _budgets = b;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = "Failed to fetch budgets.";
+      });
+    }
   }
 
   @override
@@ -973,28 +1019,30 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: kAccentColor))
-          : RefreshIndicator(
-              color: kAccentColor,
-              onRefresh: _fetchBudgets,
-              child: ListView(
-                children: [
-                  const SizedBox(height: 12),
-                  ..._budgets.map(
-                    (b) => BudgetCard(
-                      category: b['category'] ?? "",
-                      spent: (b['spent'] ?? 0).toDouble(),
-                      limit: (b['limit'] ?? 1).toDouble(),
-                      color: kCardColor,
-                    ),
+          : _error != null
+              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)))
+              : RefreshIndicator(
+                  color: kAccentColor,
+                  onRefresh: _fetchBudgets,
+                  child: ListView(
+                    children: [
+                      const SizedBox(height: 12),
+                      ..._budgets.map(
+                        (b) => BudgetCard(
+                          category: b['category'] ?? "",
+                          spent: (b['spent'] ?? 0).toDouble(),
+                          limit: (b['limit'] ?? 1).toDouble(),
+                          color: kCardColor,
+                        ),
+                      ),
+                      if (_budgets.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 30),
+                          child: Center(child: Text("No budgets; Contact admin to set budgets.", style: TextStyle(color: Colors.white38))),
+                        ),
+                    ],
                   ),
-                  if (_budgets.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 30),
-                      child: Center(child: Text("No budgets; Contact admin to set budgets.", style: TextStyle(color: Colors.white38))),
-                    ),
-                ],
-              ),
-            ),
+                ),
     );
   }
 }
@@ -1012,6 +1060,7 @@ class ChartsScreen extends StatefulWidget {
 class _ChartsScreenState extends State<ChartsScreen> {
   Map<String, dynamic> _analytics = {};
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -1020,12 +1069,22 @@ class _ChartsScreenState extends State<ChartsScreen> {
   }
 
   Future<void> _fetchAnalytics() async {
-    setState(() => _loading = true);
-    final a = await BudgetService.fetchAnalytics();
     setState(() {
-      _analytics = a;
-      _loading = false;
+      _loading = true;
+      _error = null;
     });
+    try {
+      final a = await BudgetService.fetchAnalytics();
+      setState(() {
+        _analytics = a;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = "Failed to load analytics.";
+      });
+    }
   }
 
   @override
@@ -1040,54 +1099,56 @@ class _ChartsScreenState extends State<ChartsScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: kAccentColor))
-          : RefreshIndicator(
-              color: kAccentColor,
-              onRefresh: _fetchAnalytics,
-              child: ListView(
-                padding: const EdgeInsets.all(24),
-                children: [
-                  Card(
-                    color: kCardColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 6,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Spending Breakdown by Category",
-                            style:
-                                TextStyle(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 18),
+          : _error != null
+              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)))
+              : RefreshIndicator(
+                  color: kAccentColor,
+                  onRefresh: _fetchAnalytics,
+                  child: ListView(
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      Card(
+                        color: kCardColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 6,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                "Spending Breakdown by Category",
+                                style:
+                                    TextStyle(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 18),
+                              ),
+                              const SizedBox(height: 15),
+                              if (categoryTotals.isNotEmpty)
+                                SpendingPieChart(
+                                  categoryData: categoryTotals,
+                                )
+                              else
+                                const Text("No analytics data yet.",
+                                    style: TextStyle(color: Colors.white38, fontSize: 16)),
+                            ],
                           ),
-                          const SizedBox(height: 15),
-                          if (categoryTotals.isNotEmpty)
-                            SpendingPieChart(
-                              categoryData: categoryTotals,
-                            )
-                          else
-                            const Text("No analytics data yet.",
-                                style: TextStyle(color: Colors.white38, fontSize: 16)),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      Card(
+                        color: kSecondaryColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
+                          child: Text(
+                            "Visualize your monthly and categorical spending! Add transactions with category labels to see them analyzed here.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: kAccentColor, fontSize: 16),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  Card(
-                    color: kSecondaryColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
-                      child: Text(
-                        "Visualize your monthly and categorical spending! Add transactions with category labels to see them analyzed here.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: kAccentColor, fontSize: 16),
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
+                ),
     );
   }
 }
