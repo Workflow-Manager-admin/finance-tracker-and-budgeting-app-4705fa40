@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Transaction model representing a financial transaction item.
 class TransactionModel {
   final String id;
