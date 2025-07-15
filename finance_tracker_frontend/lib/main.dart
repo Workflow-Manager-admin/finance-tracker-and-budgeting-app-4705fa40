@@ -7,18 +7,22 @@ import 'screens/budget_screen.dart';
 import 'screens/categories_screen.dart';
 import 'screens/account_screen.dart';
 
+import 'screens/login_screen.dart';
+import 'producers/auth_provider.dart';
+
 // PUBLIC_INTERFACE
 void main() {
   /// App Entry: Wrap in ProviderScope for Riverpod state management
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   /// Root MaterialApp of the application, with route configuration.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
     return MaterialApp(
       title: 'Finance Tracker',
       debugShowCheckedModeBanner: false,
@@ -31,7 +35,9 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MainNavigation(),
+      home: auth.isAuthenticated
+          ? const MainNavigation()
+          : const LoginScreen(),
     );
   }
 }
