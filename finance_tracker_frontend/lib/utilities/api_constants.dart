@@ -19,8 +19,8 @@ class ApiConstants {
   /// Default points to the remote preview deployment for 'finance_tracker_backend'.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    // Change this default to your current backend endpoint for best results:
-    // E.g. for cloud preview:
-    defaultValue: 'https://vscode-internal-4816-beta.beta01.cloud.kavia.ai:3001',
+    // For Android Emulator (connects to local backend at 127.0.0.1:3001 via 10.0.2.2)
+    // Change 'defaultValue' to your actual backend URL if running on device/cloud.
+    defaultValue: 'http://10.0.2.2:3001',
   );
 }
