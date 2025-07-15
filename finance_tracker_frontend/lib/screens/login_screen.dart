@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/error_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../producers/auth_provider.dart';
 import 'register_screen.dart';
@@ -39,10 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       if (auth.error != null)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text(
-                            auth.error!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
+                          child: AppErrorWidget(message: auth.error!),
                         ),
                       TextFormField(
                         enabled: !auth.isLoading,
