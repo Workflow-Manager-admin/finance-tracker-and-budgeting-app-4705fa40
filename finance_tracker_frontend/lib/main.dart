@@ -937,7 +937,7 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
     });
 
     final double amount = double.tryParse(_amountCtrl.text.trim()) ?? 0.0;
-    final payload = {
+    final payload = <String, dynamic>{
       "description": _descCtrl.text.trim(),
       "amount": amount,
       "category": _categoryCtrl.text.trim(),
@@ -946,20 +946,48 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
 
     bool didSucceed = false;
     String? errorMsg;
+    Map<String, dynamic>? transactionResp;
+
     if (widget.transaction == null || widget.transaction!['id'] == null) {
       // Create
-      final resp = await TransactionService.createTransaction(payload);
-      didSucceed = resp != null;
-      // If failure, attempt to extract backend error message
-      if (!didSucceed && resp != null && resp.containsKey('detail')) {
-        errorMsg = resp['detail'].toString();
+      transactionResp = await TransactionService.createTransaction(payload);
+      didSucceed = transactionResp != null;
+      // If failure, attempt to extract backend error message(s)/validation errors
+      if (!didSucceed && transactionResp != null) {
+        if (transactionResp.containsKey('detail')) {
+          // FastAPI sends 'detail' as list of error dicts for validation errors or string for generic error
+          if (transactionResp['detail'] is String) {
+            errorMsg = transactionResp['detail'].toString();
+          } else if (transactionResp['detail'] is List) {
+            // Compose a message from validation errors
+            List detailList = transactionResp['detail'];
+            errorMsg = detailList
+                .map((d) =>
+                    (d['msg'] != null && d['loc'] != null)
+                        ? '${d['loc'].join('.')}: ${d['msg']}'
+                        : (d['msg'] ?? d.toString()))
+                .join('\n');
+          }
+        }
       }
     } else {
       // Update
-      final resp = await TransactionService.updateTransaction(widget.transaction!['id'], payload);
-      didSucceed = resp != null;
-      if (!didSucceed && resp != null && resp is Map && resp.containsKey('detail')) {
-        errorMsg = resp['detail'].toString();
+      transactionResp = await TransactionService.updateTransaction(widget.transaction!['id'], payload);
+      didSucceed = transactionResp != null;
+      if (!didSucceed && transactionResp != null) {
+        if (transactionResp.containsKey('detail')) {
+          if (transactionResp['detail'] is String) {
+            errorMsg = transactionResp['detail'].toString();
+          } else if (transactionResp['detail'] is List) {
+            List detailList = transactionResp['detail'];
+            errorMsg = detailList
+                .map((d) =>
+                    (d['msg'] != null && d['loc'] != null)
+                        ? '${d['loc'].join('.')}: ${d['msg']}'
+                        : (d['msg'] ?? d.toString()))
+                .join('\n');
+          }
+        }
       }
     }
 
@@ -969,7 +997,24 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
       widget.onSave?.call();
       Navigator.of(context).pop();
     } else {
-      setState(() => _error = errorMsg ?? "Failed to save. Try again.");
+      setState(() => _error = errorMsg ?? "Failed to save. Please check required fields and try again.");
+      // Also show feedback with dialog for higher visibility
+      if (mounted && errorMsg != null) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: kCardColor,
+            title: const Text('Transaction Error', style: TextStyle(color: kAccentColor)),
+            content: Text(errorMsg!, style: const TextStyle(color: Colors.white70),),
+            actions: [
+              TextButton(
+                child: const Text('OK', style: TextStyle(color: kAccentColor)),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
