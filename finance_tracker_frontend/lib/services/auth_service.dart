@@ -10,7 +10,7 @@ class AuthService {
   static const _storage = FlutterSecureStorage();
 
   // Update this to point to your FastAPI backend base URL:
-  static const String apiBaseUrl = "https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001";
+  static const String apiBaseUrl = "https://02f0de475628.ngrok-free.app";
 
 // -- NETWORK DEBUG INFO (Not part of build; for dev diagnostics only) --
 // Backend running location: https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001

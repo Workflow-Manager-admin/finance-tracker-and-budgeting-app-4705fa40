@@ -406,9 +406,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     });
 
-    // After UI update, trigger navigation callback ONLY after async gap + mounted check
+    // After UI update, trigger navigation callback immediately for linter compliance
     if (result['success'] == true) {
-      await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
       widget.onRegister();
     }
