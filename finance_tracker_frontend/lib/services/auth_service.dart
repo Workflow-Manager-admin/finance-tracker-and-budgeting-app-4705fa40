@@ -11,17 +11,17 @@ class AuthService {
 
   // Update this to your current ngrok/public backend base URL:
   // IMPORTANT: Set this to the currently exposed backend API. Update when ngrok restarts!
-  static const String apiBaseUrl = "https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001";
+  static const String apiBaseUrl = "https://02f0de475628.ngrok-free.app";
 
-// -- NETWORK DEBUG INFO (Not part of build; for dev diagnostics only) --
-// Backend running location: https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001
-// apiBaseUrl above is set to: http://10.0.2.2:8000
-// For Android emulator:       http://10.0.2.2:<PORT> (maps to localhost on dev machine)
-// For iOS simulator:          http://localhost:<PORT> (physical device: use LAN IP or tunneled URL)
-// To match backend, set      apiBaseUrl to: https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001
-// Example registration URL:  https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001/auth/register
-// Example health check:      https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001/
-//
+  // -- NETWORK DEBUG INFO (Not part of build; for dev diagnostics only) --
+  // Backend running location: https://02f0de475628.ngrok-free.app
+  // apiBaseUrl above is set to: https://02f0de475628.ngrok-free.app
+  // For Android emulator:       http://10.0.2.2:<PORT> (maps to localhost on dev machine)
+  // For iOS simulator:          http://localhost:<PORT> (physical device: use LAN IP or tunneled URL)
+  // To match backend, set      apiBaseUrl to: https://02f0de475628.ngrok-free.app
+  // Example registration URL:  https://02f0de475628.ngrok-free.app/auth/register
+  // Example health check:      https://02f0de475628.ngrok-free.app/
+  //
 
   /// PUBLIC_INTERFACE
   /// Attempts user login with API.

@@ -390,7 +390,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Await the async registration and after it's done, check if widget is mounted before navigation
+    // Await the async registration and after it's done, call onRegister only in sync context
     final didSucceed = await _performRegister();
     if (!mounted) return;
     if (didSucceed) {
@@ -407,6 +407,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return false; // Prevent context/member use after async gap
 
     final bool didSucceed = result['success'] == true;
+    if (!mounted) return false;
     setState(() {
       _loading = false;
       if (didSucceed) {
