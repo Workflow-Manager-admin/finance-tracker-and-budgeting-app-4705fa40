@@ -390,27 +390,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Registration network call
+    // Await the async registration and after it's done, use a post-frame callback
+    final didSucceed = await _performRegister();
+    if (didSucceed && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onRegister();
+      });
+    }
+  }
+
+  /// Returns true if registration succeeded (i.e. callback should fire), false otherwise.
+  Future<bool> _performRegister() async {
     final result = await AuthService.register(
       _emailCtrl.text.trim(),
       _pwdCtrl.text,
     );
 
-    // Set UI state depending on result
+    final bool didSucceed = result['success'] == true;
     setState(() {
       _loading = false;
-      if (result['success'] == true) {
+      if (didSucceed) {
         _success = result['message'] ?? "Registration successful. Please log in.";
       } else {
         _error = result['message'] ?? "Registration failed.";
       }
     });
-
-    // After UI update, trigger navigation callback immediately for linter compliance
-    if (result['success'] == true) {
-      if (!mounted) return;
-      widget.onRegister();
-    }
+    return didSucceed;
   }
 
   @override
