@@ -9,7 +9,7 @@ android {
     namespace = "com.example.finance_tracker_frontend"
     compileSdk = flutter.compileSdkVersion
     // Use a fixed NDK version for shared_preferences_android compatibility
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "26.3.11579264"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
