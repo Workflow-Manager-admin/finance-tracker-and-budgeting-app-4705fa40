@@ -29,9 +29,12 @@ class AuthService {
   /// Returns: { "success": true, "message": "..."} on success, or {"success": false, "message": "..."} on failure.
   /// On success, saves access_token in secure storage for future requests.
   static Future<Map<String, dynamic>> login(String email, String password) async {
-    // Backend expects JSON body: {email, password}
+    // The backend expects application/x-www-form-urlencoded body with keys: username, password
     final url = Uri.parse("$apiBaseUrl/auth/login");
-    final body = json.encode({"email": email, "password": password});
+
+    // Build form-urlencoded body. The UI passes "email" (really username/email) and password.
+    final formBody =
+        "username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}";
 
     String friendlyError(dynamic v) {
       // Robustly convert error message/list/other to user-facing string
@@ -47,7 +50,9 @@ class AuthService {
 
     try {
       final resp = await http
-          .post(url, headers: {"Content-Type": "application/json"}, body: body)
+          .post(url,
+              headers: {"Content-Type": "application/x-www-form-urlencoded"},
+              body: formBody)
           .timeout(const Duration(seconds: 12));
 
       // Expect 200 and an access_token in the response body
