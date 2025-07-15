@@ -1187,6 +1187,19 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
+  // Show CreateBudgetDialog; on success, refetch budgets
+  Future<void> _showCreateBudgetDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => CreateBudgetDialog(),
+    );
+    if (result == true) {
+      // Refresh list after successful creation
+      await _fetchBudgets();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1220,6 +1233,302 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     ],
                   ),
                 ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: "Create Budget",
+        onPressed: _loading ? null : _showCreateBudgetDialog,
+        backgroundColor: kPrimaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+}
+
+///
+/// UI Widget for creating a new Budget.
+/// Pops true on Navigator if successful, else false/null.
+///
+class CreateBudgetDialog extends StatefulWidget {
+  const CreateBudgetDialog({super.key});
+  @override
+  State<CreateBudgetDialog> createState() => _CreateBudgetDialogState();
+}
+
+class _CreateBudgetDialogState extends State<CreateBudgetDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _limitCtrl = TextEditingController();
+  final TextEditingController _categoryCtrl = TextEditingController();
+  String _period = "monthly";
+  DateTime? _startDate;
+  DateTime? _endDate;
+  bool _loading = false;
+  String? _error;
+
+  static const List<String> _periods = [
+    "monthly",
+    "weekly",
+    "yearly",
+    "custom"
+  ];
+
+  // For a new monthly budget default to the 1st of next month.
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, 1);
+    _endDate = null;
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart
+          ? (_startDate ?? DateTime.now())
+          : (_endDate ?? (_startDate ?? DateTime.now()).add(const Duration(days: 30))),
+      firstDate: DateTime(2023),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark(),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+        } else {
+          _endDate = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    double? target;
+    try {
+      target = double.parse(_limitCtrl.text.trim());
+    } catch (_) {}
+    if (target == null) {
+      setState(() {
+        _loading = false;
+        _error = "Invalid amount.";
+      });
+      return;
+    }
+
+    String? period = _period;
+    DateTime? start = _startDate;
+    DateTime? end = (_period == "custom") ? _endDate : null;
+
+    final payload = {
+      "limit": target,
+      "period": period,
+      "start_date": start?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      "end_date": end?.toIso8601String(),
+      "category_name": _categoryCtrl.text.trim().isNotEmpty ? _categoryCtrl.text.trim() : null,
+    };
+
+    final resp = await BudgetService.createBudget(payload);
+
+    setState(() {
+      _loading = false;
+    });
+
+    if (resp != null && resp.containsKey("limit")) {
+      // Success!
+      if (mounted) Navigator.of(context).pop(true);
+    } else {
+      // Backend error detail handling
+      String errorMsg = "Failed to create budget. Please check required fields.";
+      if (resp != null && resp.containsKey("detail")) {
+        final detail = resp["detail"];
+        if (detail is String) {
+          errorMsg = detail;
+        } else if (detail is List) {
+          errorMsg = detail.map((e) {
+            if (e is Map && e.containsKey("msg")) return e["msg"];
+            return e.toString();
+          }).join("\n");
+        }
+      }
+      setState(() {
+        _error = errorMsg;
+      });
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: kCardColor,
+            title: const Text(
+              "Budget Creation Error",
+              style: TextStyle(color: kAccentColor),
+            ),
+            content: Text(
+              _error!,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text("OK", style: TextStyle(color: kAccentColor)),
+              )
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: kCardColor,
+      title: const Text(
+        "Create New Budget",
+        style: TextStyle(color: kAccentColor, fontWeight: FontWeight.bold),
+      ),
+      content: Form(
+        key: _formKey,
+        child: SizedBox(
+          width: 350,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _categoryCtrl,
+                  decoration: const InputDecoration(
+                      labelText: "Category (optional)",
+                      labelStyle: TextStyle(color: kAccentColor),
+                      filled: true,
+                      fillColor: kSecondaryColor,
+                      border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 15),
+                TextFormField(
+                  controller: _limitCtrl,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      labelText: "Target Amount",
+                      labelStyle: TextStyle(color: kAccentColor),
+                      filled: true,
+                      fillColor: kSecondaryColor,
+                      border: OutlineInputBorder(),
+                      prefixText: "\$ "),
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? "Required"
+                      : (double.tryParse(v) == null
+                          ? "Enter a number"
+                          : null),
+                ),
+                const SizedBox(height: 15),
+                DropdownButtonFormField<String>(
+                  value: _period,
+                  items: _periods
+                      .map(
+                        (p) => DropdownMenuItem(
+                          value: p,
+                          child: Text(
+                            p[0].toUpperCase() + p.substring(1),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _loading
+                      ? null
+                      : (v) => setState(() => _period = v ?? "monthly"),
+                  decoration: const InputDecoration(
+                    labelText: "Period",
+                    labelStyle: TextStyle(color: kAccentColor),
+                    filled: true,
+                    fillColor: kSecondaryColor,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                InputDecorator(
+                  decoration: const InputDecoration(
+                      labelText: "Start Date",
+                      labelStyle: TextStyle(color: kAccentColor),
+                      filled: true,
+                      fillColor: kSecondaryColor,
+                      border: OutlineInputBorder()),
+                  child: ListTile(
+                    title: Text(
+                      _startDate != null
+                          ? "${_startDate!.year}-${_startDate!.month.toString().padLeft(2, '0')}-${_startDate!.day.toString().padLeft(2, '0')}"
+                          : "Pick start date",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.date_range, color: kPrimaryColor),
+                      onPressed: _loading
+                          ? null
+                          : () => _pickDate(isStart: true),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                if (_period == "custom")
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                        labelText: "End Date",
+                        labelStyle: TextStyle(color: kAccentColor),
+                        filled: true,
+                        fillColor: kSecondaryColor,
+                        border: OutlineInputBorder()),
+                    child: ListTile(
+                      title: Text(
+                        _endDate != null
+                            ? "${_endDate!.year}-${_endDate!.month.toString().padLeft(2, '0')}-${_endDate!.day.toString().padLeft(2, '0')}"
+                            : "Pick end date",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.date_range, color: kPrimaryColor),
+                        onPressed: _loading
+                            ? null
+                            : () => _pickDate(isStart: false),
+                      ),
+                    ),
+                  ),
+                if (_error != null) ...[
+                  const SizedBox(height: 9),
+                  Text(_error!, style: const TextStyle(color: Colors.red))
+                ]
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.of(context).pop(false),
+          child: const Text("Cancel", style: TextStyle(color: kAccentColor)),
+        ),
+        ElevatedButton(
+          onPressed: _loading ? null : _handleSubmit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kPrimaryColor,
+            minimumSize: const Size(110, 41),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              : const Text("Create", style: TextStyle(color: Colors.white)),
+        )
+      ],
     );
   }
 }
