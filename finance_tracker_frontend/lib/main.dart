@@ -695,24 +695,27 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  void _deleteTx(int id) async {
+  // PUBLIC_INTERFACE
+  /// Deletes a transaction after user confirmation and refreshes the list.
+  Future<void> _deleteTx(int id) async {
+    final BuildContext dialogContext = context;
     final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+      context: dialogContext,
+      builder: (localDialogContext) => AlertDialog(
         backgroundColor: kCardColor,
         title: const Text("Confirm Deletion", style: TextStyle(color: Colors.white)),
         content: const Text("Are you sure you want to delete this transaction?",
             style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Delete')),
+          TextButton(onPressed: () => Navigator.of(localDialogContext).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(localDialogContext).pop(true), child: const Text('Delete')),
         ],
       ),
     );
-    if (confirmed == true) {
-      await TransactionService.deleteTransaction(id);
-      await _fetchTransactions();
-    }
+    // Strict linter appeasement: return unless confirmed and mounted
+    if (!mounted || confirmed != true) return;
+    await TransactionService.deleteTransaction(id);
+    await _fetchTransactions();
   }
 
   @override
