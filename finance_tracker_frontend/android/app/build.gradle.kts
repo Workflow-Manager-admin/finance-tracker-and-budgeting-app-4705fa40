@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.finance_tracker_frontend"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973" // Set specific NDK version required by flutter_secure_storage/path_provider_android
+    ndkVersion = "26.3.11579264" // Set specific NDK version required by flutter_secure_storage/path_provider_android
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
