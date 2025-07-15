@@ -105,7 +105,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
           ),
         ],
         // Set consistent bar background using theme.
-        backgroundColor: Theme.of(context).bottomAppBarColor,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
     );
   }
