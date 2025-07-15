@@ -95,6 +95,7 @@ class _AuthNavigationState extends State<AuthNavigation> {
 
   Future<void> _checkAuth() async {
     final auth = await AuthService.isAuthenticated();
+    if (!mounted) return;
     setState(() {
       _isAuthenticated = auth;
     });
@@ -102,6 +103,8 @@ class _AuthNavigationState extends State<AuthNavigation> {
 
   void _onAuthenticated() async {
     await _checkAuth();
+    if (!mounted) return;
+    // Optionally, after login, you might want to reset navigation if required.
   }
 
   void _onSwitchToRegister() {
@@ -238,20 +241,32 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String? _error;
 
+  // Navigation to dashboard with clearing of stacks, after successful login.
+  void _navigateToDashboard(BuildContext navContext) {
+    // Replace entire navigation stack with MainScaffold (dashboard)
+    Navigator.of(navContext).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (ctx) => MainScaffold()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
+  // Triggered when user presses Login button
   void _handleLogin() async {
+    final navContext = context; // capture context before async
     setState(() {
       _loading = true;
       _error = null;
     });
     final result = await AuthService.login(_emailCtrl.text.trim(), _pwdCtrl.text);
-    setState(() => _loading = false);
+    if (!mounted) return;
     if (result['success'] == true) {
-      widget.onLogin();
-    } else {
-      setState(() {
-        _error = result['message'] ?? 'Login failed';
-      });
+      _navigateToDashboard(navContext);
+      return;
     }
+    setState(() {
+      _loading = false;
+      _error = result['message'] ?? 'Login failed';
+    });
   }
 
   @override
