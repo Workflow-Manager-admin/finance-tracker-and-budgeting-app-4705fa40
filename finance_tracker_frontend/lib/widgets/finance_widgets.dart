@@ -74,6 +74,7 @@ class TransactionListTile extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
                 leading: CircleAvatar(
                   radius: 22,
+                  // Uses backgroundColor for transparent look; no unsupported Paint/shader applied
                   backgroundColor: Colors.transparent,
                   child: Icon(
                     transaction['amount'] >= 0 ? Icons.south_west : Icons.north_east,

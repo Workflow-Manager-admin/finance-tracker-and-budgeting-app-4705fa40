@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 // import 'package:animations/animations.dart'; // Not directly used here; used in widgets
@@ -966,10 +967,9 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
   }
 
   Future<void> _pickDate() async {
-    // Avoid using context across async gap by storing locally for showDatePicker call
-    final ctx = context;
+    // Do not save context or pass it across async gap; use directly
     final picked = await showDatePicker(
-      context: ctx,
+      context: context,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2010),
       lastDate: DateTime(2100),
