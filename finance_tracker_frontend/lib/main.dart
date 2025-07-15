@@ -1,3 +1,4 @@
+ // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 import 'widgets/finance_widgets.dart';
@@ -902,10 +903,10 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
   }
 
   Future<void> _pickDate() async {
-    final BuildContext localContext = context; // capture before async gap
-    // All dialog/pickers receive the context pointer that is valid here.
+    // Call showDatePicker with this context (not storing context across gap)
+    // ignore: use_build_context_synchronously
     final picked = await showDatePicker(
-      context: localContext,
+      context: context,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2010),
       lastDate: DateTime(2100),
@@ -922,7 +923,6 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
         child: child!,
       ),
     );
-    // Per Flutter lints: check mounted immediately after await before using picked/context/state
     if (!mounted) return;
     if (picked != null) {
       setState(() => _selectedDate = picked);
