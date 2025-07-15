@@ -90,8 +90,8 @@ class _TransactionListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = tx.type == "income"
-        ? Colors.greenAccent.withOpacity(0.8)
-        : Colors.redAccent.withOpacity(0.8);
+        ? Colors.greenAccent.withValues(alpha: 0.8)
+        : Colors.redAccent.withValues(alpha: 0.8);
 
     return ListTile(
       leading: CircleAvatar(

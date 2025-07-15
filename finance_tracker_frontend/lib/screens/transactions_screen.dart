@@ -13,7 +13,7 @@ class TransactionsScreen extends ConsumerWidget {
     final txListAsync = ref.watch(transactionsListProvider(null));
 
     /// Used for edit form: opens add or edit as dialog
-    Future<void> _showTxForm({TransactionModel? tx}) async {
+    Future<void> showTxForm({TransactionModel? tx}) async {
       await showDialog(
         context: context,
         barrierDismissible: false,
@@ -105,8 +105,8 @@ class TransactionsScreen extends ConsumerWidget {
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: tx.type == "income"
-                                ? Colors.greenAccent.withOpacity(0.7)
-                                : Colors.redAccent.withOpacity(0.7),
+                                ? Colors.greenAccent.withValues(alpha: 0.7)
+                                : Colors.redAccent.withValues(alpha: 0.7),
                             child: Icon(
                               tx.type == "income"
                                   ? Icons.arrow_downward
@@ -115,7 +115,7 @@ class TransactionsScreen extends ConsumerWidget {
                             ),
                           ),
                           title: Text(
-                            "\${tx.amount.toStringAsFixed(2)} ${tx.currency}",
+                            "\$${tx.amount.toStringAsFixed(2)} ${tx.currency}",
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
@@ -123,10 +123,10 @@ class TransactionsScreen extends ConsumerWidget {
                           isThreeLine: tx.description != null && tx.description!.isNotEmpty,
                           trailing: IconButton(
                             icon: const Icon(Icons.edit, color: Colors.white),
-                            onPressed: () => _showTxForm(tx: tx),
+                            onPressed: () => showTxForm(tx: tx),
                             tooltip: "Edit",
                           ),
-                          onTap: () => _showTxForm(tx: tx),
+                          onTap: () => showTxForm(tx: tx),
                         ),
                       );
                     }),
@@ -134,7 +134,7 @@ class TransactionsScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showTxForm(),
+        onPressed: () => showTxForm(),
         icon: const Icon(Icons.add),
         label: const Text("Add"),
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -174,7 +174,7 @@ class TransactionsScreen extends ConsumerWidget {
 /// Dialog for add/edit a transaction.
 class TransactionFormDialog extends ConsumerStatefulWidget {
   final TransactionModel? transaction;
-  const TransactionFormDialog({Key? key, this.transaction}) : super(key: key);
+  const TransactionFormDialog({super.key, this.transaction});
 
   @override
   ConsumerState<TransactionFormDialog> createState() => _TransactionFormDialogState();
@@ -213,7 +213,7 @@ class _TransactionFormDialogState extends ConsumerState<TransactionFormDialog> {
     final crudState = ref.watch(transactionCrudProvider);
     final crudNotifier = ref.read(transactionCrudProvider.notifier);
 
-    void _submit() async {
+    void submit() async {
       if (!_formKey.currentState!.validate()) return;
       _formKey.currentState!.save();
       setState(() => _loading = true);
@@ -372,7 +372,7 @@ class _TransactionFormDialogState extends ConsumerState<TransactionFormDialog> {
                   width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.save, size: 18),
           label: Text(widget.transaction == null ? "Add" : "Save"),
-          onPressed: _loading ? null : _submit,
+          onPressed: _loading ? null : submit,
         )
       ],
     );

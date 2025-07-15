@@ -37,7 +37,7 @@ class BudgetGaugeChart extends StatelessWidget {
                 ),
                 PieChartSectionData(
                   value: 1.0 - (percent < 1.0 ? percent : 1.0),
-                  color: theme.colorScheme.surface.withOpacity(0.13),
+                  color: theme.colorScheme.surface.withValues(alpha: 0.13),
                   radius: 26,
                   showTitle: false,
                   title: '',

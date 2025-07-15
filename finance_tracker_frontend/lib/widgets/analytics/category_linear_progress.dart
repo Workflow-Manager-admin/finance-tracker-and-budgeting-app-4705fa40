@@ -35,7 +35,7 @@ class CategoryLinearProgress extends StatelessWidget {
         const SizedBox(height: 6),
         LinearProgressIndicator(
           value: percent < 1.0 ? percent : 1.0,
-          backgroundColor: theme.colorScheme.surface.withOpacity(0.11),
+          backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.11),
           color: percent < 1.01
               ? theme.colorScheme.primary
               : Colors.redAccent,

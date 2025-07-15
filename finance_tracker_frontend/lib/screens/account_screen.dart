@@ -38,6 +38,7 @@ class AccountScreen extends ConsumerWidget {
               label: const Text("Logout"),
               onPressed: () async {
                 await ref.read(authProvider.notifier).logout();
+                if (!context.mounted) return;
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                   (route) => false,

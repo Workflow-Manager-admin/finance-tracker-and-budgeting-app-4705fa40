@@ -66,6 +66,6 @@ class CategoryPieChart extends StatelessWidget {
       Colors.indigo,
       Colors.grey,
     ];
-    return predefined[idx % predefined.length].withOpacity(0.9);
+    return predefined[idx % predefined.length].withValues(alpha: 0.9);
   }
 }

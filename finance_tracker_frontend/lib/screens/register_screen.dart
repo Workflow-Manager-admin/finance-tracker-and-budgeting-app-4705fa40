@@ -119,6 +119,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         _password,
                                       );
                                   // On successful registration (auto-login), pop to login/main.
+                                  if (!context.mounted) return;
                                   if (ref.read(authProvider).isAuthenticated) {
                                     Navigator.pop(context);
                                   }
