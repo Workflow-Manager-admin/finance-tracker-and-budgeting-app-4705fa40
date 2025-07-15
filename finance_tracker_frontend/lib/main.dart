@@ -945,15 +945,22 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
     };
 
     bool didSucceed = false;
+    String? errorMsg;
     if (widget.transaction == null || widget.transaction!['id'] == null) {
       // Create
       final resp = await TransactionService.createTransaction(payload);
       didSucceed = resp != null;
+      // If failure, attempt to extract backend error message
+      if (!didSucceed && resp != null && resp.containsKey('detail')) {
+        errorMsg = resp['detail'].toString();
+      }
     } else {
       // Update
-      final resp =
-          await TransactionService.updateTransaction(widget.transaction!['id'], payload);
+      final resp = await TransactionService.updateTransaction(widget.transaction!['id'], payload);
       didSucceed = resp != null;
+      if (!didSucceed && resp != null && resp is Map && resp.containsKey('detail')) {
+        errorMsg = resp['detail'].toString();
+      }
     }
 
     setState(() => _loading = false);
@@ -962,7 +969,7 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
       widget.onSave?.call();
       Navigator.of(context).pop();
     } else {
-      setState(() => _error = "Failed to save. Try again.");
+      setState(() => _error = errorMsg ?? "Failed to save. Try again.");
     }
   }
 
