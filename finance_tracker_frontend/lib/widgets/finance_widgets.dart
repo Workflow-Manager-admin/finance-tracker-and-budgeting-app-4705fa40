@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:animations/animations.dart';
 
-const kCardRadius = 16.0;
+const kCardRadius = 20.0;
 
 /// PUBLIC_INTERFACE
 /// Card widget for displaying a transaction item.
@@ -20,47 +22,118 @@ class TransactionListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kCardRadius)),
-      child: ListTile(
-        onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: Colors.white.withAlpha(25), // 0.1 opacity for avatar
-          child: Icon(
-            transaction['amount'] >= 0 ? Icons.arrow_downward : Icons.arrow_upward,
-            color: transaction['amount'] >= 0 ? Colors.greenAccent : Colors.redAccent,
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+      child: OpenContainer(
+        transitionType: ContainerTransitionType.fadeThrough,
+        openColor: color,
+        closedColor: color,
+        closedElevation: 8,
+        closedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kCardRadius),
         ),
-        title: Text(
-          transaction['description'] ?? 'No Desc',
-          style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
-        ),
-        subtitle: Text(
-          transaction['category'] ?? '',
-          style: const TextStyle(color: Colors.white54, fontSize: 13),
-        ),
-        trailing: Wrap(
-          spacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              '${transaction['amount'] >= 0 ? '+ ' : '- '}\$${(transaction['amount'] as num).abs().toStringAsFixed(2)}',
-              style: TextStyle(
-                  color: transaction['amount'] >= 0 ? Colors.greenAccent : Colors.redAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16),
-            ),
-            if (onDelete != null)
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                tooltip: "Delete",
-                onPressed: onDelete,
+        transitionDuration: const Duration(milliseconds: 380),
+        openBuilder: (context, _) {
+          return Container(); // to be replaced by editing details
+        },
+        closedBuilder: (context, openContainer) {
+          return InkWell(
+            borderRadius: BorderRadius.circular(kCardRadius),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 230),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    transaction['amount'] >= 0
+                        ? const Color(0xFF273944)
+                        : const Color(0xFF3d1b2e),
+                    color,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(kCardRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: transaction['amount'] >= 0
+                        ? Colors.greenAccent.withOpacity(0.11)
+                        : Colors.redAccent.withOpacity(0.18),
+                    blurRadius: 8,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(
+                  width: 1,
+                  color: transaction['amount'] >= 0
+                      ? Colors.greenAccent.withOpacity(0.08)
+                      : Colors.redAccent.withOpacity(0.12),
+                ),
               ),
-          ],
-        ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
+                leading: CircleAvatar(
+                  radius: 22,
+                  background: Paint()..shader = RadialGradient(
+                    colors: [
+                      transaction['amount'] >= 0
+                          ? Colors.greenAccent.withOpacity(0.65)
+                          : Colors.redAccent.withOpacity(0.68),
+                      Colors.transparent,
+                    ],
+                  ).createShader(const Rect.fromLTWH(0,0,44,44)),
+                  backgroundColor: Colors.transparent,
+                  child: Icon(
+                    transaction['amount'] >= 0 ? Icons.south_west : Icons.north_east,
+                    color: transaction['amount'] >= 0 ? Colors.greenAccent : Colors.redAccent,
+                    size: 26,
+                  ),
+                ),
+                title: Text(
+                  transaction['description'] ?? 'No Description',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  transaction['category'] ?? '',
+                  style: GoogleFonts.inter(
+                    color: Colors.white54,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Wrap(
+                  spacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      '${transaction['amount'] >= 0 ? '+ ' : '- '}\$${(transaction['amount'] as num).abs().toStringAsFixed(2)}',
+                      style: GoogleFonts.inter(
+                        color: transaction['amount'] >= 0
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                      ),
+                    ),
+                    if (onDelete != null)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        tooltip: "Delete",
+                        onPressed: onDelete,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -85,31 +158,74 @@ class BudgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double percent = (limit > 0) ? (spent / limit).clamp(0.0, 1.0) : 0;
-    return Card(
-      color: color,
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kCardRadius)),
-      elevation: 4,
+    final statusColor = percent > 0.8
+        ? Colors.redAccent
+        : (percent > 0.5 ? Colors.orangeAccent : Colors.greenAccent);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.94),
+            color.withOpacity(0.77),
+            Colors.black12,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0.04, 0.9, 1],
+        ),
+        borderRadius: BorderRadius.circular(kCardRadius),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.13),
+            blurRadius: 10,
+            offset: const Offset(3, 5),
+          )
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               category,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.white,
+                letterSpacing: 0.18,
+              ),
+            ),
+            const SizedBox(height: 11),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: percent,
+                minHeight: 9.8,
+                backgroundColor: Colors.white12,
+                valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+              ),
             ),
             const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: percent,
-              minHeight: 8,
-              backgroundColor: Colors.white12,
-              color: percent > 0.8 ? Colors.redAccent : (percent > 0.5 ? Colors.orangeAccent : Colors.greenAccent),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '\$${spent.toStringAsFixed(2)} / \$${limit.toStringAsFixed(2)}',
-              style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w500),
+            Row(
+              children: [
+                Icon(
+                  percent > 1.0
+                      ? Icons.warning_amber_rounded
+                      : Icons.check_circle_rounded,
+                  color: statusColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 9),
+                Text(
+                  '\$${spent.toStringAsFixed(2)} / \$${limit.toStringAsFixed(2)}',
+                  style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 17),
+                ),
+              ],
             ),
           ],
         ),

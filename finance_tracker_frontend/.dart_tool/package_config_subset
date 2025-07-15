@@ -1,3 +1,7 @@
+animations
+3.2
+file:///home/kavia/.pub-cache/hosted/pub.dev/animations-2.0.11/
+file:///home/kavia/.pub-cache/hosted/pub.dev/animations-2.0.11/lib/
 async
 3.4
 file:///home/kavia/.pub-cache/hosted/pub.dev/async-2.12.0/
@@ -18,6 +22,10 @@ collection
 3.4
 file:///home/kavia/.pub-cache/hosted/pub.dev/collection-1.19.1/
 file:///home/kavia/.pub-cache/hosted/pub.dev/collection-1.19.1/lib/
+crypto
+3.4
+file:///home/kavia/.pub-cache/hosted/pub.dev/crypto-3.0.6/
+file:///home/kavia/.pub-cache/hosted/pub.dev/crypto-3.0.6/lib/
 cupertino_icons
 3.1
 file:///home/kavia/.pub-cache/hosted/pub.dev/cupertino_icons-1.0.8/
@@ -58,6 +66,10 @@ flutter_secure_storage_windows
 2.12
 file:///home/kavia/.pub-cache/hosted/pub.dev/flutter_secure_storage_windows-3.1.2/
 file:///home/kavia/.pub-cache/hosted/pub.dev/flutter_secure_storage_windows-3.1.2/lib/
+google_fonts
+2.14
+file:///home/kavia/.pub-cache/hosted/pub.dev/google_fonts-6.2.1/
+file:///home/kavia/.pub-cache/hosted/pub.dev/google_fonts-6.2.1/lib/
 http
 3.4
 file:///home/kavia/.pub-cache/hosted/pub.dev/http-1.4.0/

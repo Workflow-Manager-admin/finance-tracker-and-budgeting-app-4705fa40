@@ -1,16 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+// import 'package:animations/animations.dart'; // Not directly used here; used in widgets
 import 'services/auth_service.dart';
 import 'widgets/finance_widgets.dart';
 import 'services/transaction_service.dart';
 import 'services/budget_service.dart';
 import 'widgets/pie_chart.dart';
 
-// Define color constants for the modern dark theme
+// Color palette for modern coherent dark UI
 const Color kPrimaryColor = Color(0xFFd21947);
 const Color kSecondaryColor = Color(0xFF22252d);
 const Color kAccentColor = Color(0xFF05ffee);
-const Color kBackgroundColor = Color(0xFF16171a);
+const Color kGradientStart = Color(0xFF42155b);
+const Color kGradientEnd = Color(0xFF20284a);
+const Color kBackgroundColor = Color(0xFF15161c);
 const Color kCardColor = Color(0xFF22252d);
+const double kCardElevation = 10.0;
+
+class AppGradients {
+  static LinearGradient accentCard = const LinearGradient(
+    colors: [kPrimaryColor, kAccentColor],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    stops: [0.1, 0.8],
+  );
+  static LinearGradient subtleBackground = const LinearGradient(
+    colors: [kGradientStart, kGradientEnd],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
 
 void main() {
   runApp(const FinanceTrackerApp());
@@ -26,6 +45,7 @@ class FinanceTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseTextTheme = ThemeData.dark().textTheme;
     return MaterialApp(
       title: 'Finance Tracker',
       debugShowCheckedModeBanner: false,
@@ -38,29 +58,73 @@ class FinanceTrackerApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: kBackgroundColor,
         cardColor: kCardColor,
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           backgroundColor: kSecondaryColor,
-          elevation: 1,
-          iconTheme: IconThemeData(color: kAccentColor),
+          elevation: 3,
+          iconTheme: const IconThemeData(color: kAccentColor),
           foregroundColor: Colors.white,
+          titleTextStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            color: Colors.white,
+            letterSpacing: 0.15,
+          ),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: kPrimaryColor,
           foregroundColor: Colors.white,
+          elevation: 12,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ButtonStyle(
+            backgroundColor: WidgetStateProperty.resolveWith<Color>(
+              (states) => states.contains(WidgetState.disabled)
+                  ? Colors.white12
+                  : kPrimaryColor,
+            ),
+            elevation: WidgetStateProperty.all<double>(8),
+            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            ),
+            foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+            overlayColor: WidgetStateProperty.all<Color>(kAccentColor.withOpacity(0.08)),
+            textStyle: WidgetStateProperty.all<TextStyle>(
+              GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
+            padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
+                const EdgeInsets.symmetric(vertical: 16, horizontal: 24)),
+            shadowColor: WidgetStateProperty.all<Color>(kPrimaryColor.withOpacity(0.25)),
+          ),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           backgroundColor: kSecondaryColor,
-          selectedItemColor: kPrimaryColor,
-          unselectedItemColor: Colors.grey,
+          selectedItemColor: kAccentColor,
+          unselectedItemColor: Colors.white54,
           showSelectedLabels: true,
-          showUnselectedLabels: true,
+          showUnselectedLabels: false,
+          elevation: 13,
         ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white70),
+        cardTheme: CardTheme(
+          color: kCardColor,
+          elevation: kCardElevation,
+          margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          shadowColor: kPrimaryColor.withOpacity(0.18),
+        ),
+        textTheme: GoogleFonts.interTextTheme(baseTextTheme).copyWith(
+          displayLarge: GoogleFonts.inter(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 32),
+          displayMedium: GoogleFonts.inter(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
+          displaySmall: GoogleFonts.inter(
+              color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20),
+          bodyLarge: GoogleFonts.inter(
+              color: Colors.white, fontWeight: FontWeight.w500, fontSize: 18),
+          bodyMedium: GoogleFonts.inter(
+              color: Colors.white70, fontWeight: FontWeight.w400, fontSize: 16),
         ),
         useMaterial3: true,
-        fontFamily: 'Roboto',
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const AuthNavigation(),
     );
