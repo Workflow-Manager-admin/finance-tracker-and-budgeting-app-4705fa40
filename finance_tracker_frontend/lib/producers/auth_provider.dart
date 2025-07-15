@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../utilities/token_storage.dart';
+import '../utilities/api_constants.dart';
 
 /// Auth states for login/register flows.
 class AuthState {
@@ -44,10 +45,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _loadToken();
   }
 
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
-  );
+  // Use centralized API constants for base URL.
+  static const String baseUrl = ApiConstants.apiBaseUrl;
 
   Future<void> _loadToken() async {
     final token = await TokenStorage.getToken();
@@ -71,7 +70,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        final token = data['access_token'] ?? data['token'] ?? null;
+        final token = data['access_token'] ?? data['token'];
         if (token != null) {
           await TokenStorage.saveToken(token);
           state = state.copyWith(

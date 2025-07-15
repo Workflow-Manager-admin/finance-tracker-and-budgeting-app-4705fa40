@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../producers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -14,7 +14,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String _username = '';
   String _email = '';
   String _password = '';
-  String _confirmPassword = '';
   bool _obscurePassword = true;
 
   @override
@@ -105,9 +104,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           icon: Icon(Icons.lock_outline),
                           labelText: 'Confirm Password',
                         ),
-                        onChanged: (value) => _confirmPassword = value,
-                        validator: (val) =>
-                            val != _password ? 'Passwords do not match' : null,
+                        onChanged: (value) {},
+                        validator: (val) => val != _password ? 'Passwords do not match' : null,
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton(

@@ -1,4 +1,6 @@
-/// Models for analytics and budgeting endpoints: budget analytics and category summary.
+/*
+  Models for analytics and budgeting endpoints: budget analytics and category summary.
+ */
 
 class CategoryBreakdownItem {
   final String category;
