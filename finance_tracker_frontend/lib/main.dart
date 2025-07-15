@@ -1,5 +1,10 @@
+// All imports must be at the very top!
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
+import 'widgets/finance_widgets.dart';
+import 'services/transaction_service.dart';
+import 'services/budget_service.dart';
+import 'widgets/pie_chart.dart';
 
 // Define color constants for the modern dark theme
 const Color kPrimaryColor = Color(0xFFd21947);
@@ -501,12 +506,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 ///
+// (remove these duplicate import directives)
+
 /// DASHBOARD SCREEN
 /// PUBLIC_INTERFACE
-/// Minimal placeholder for Dashboard.
-///
-class DashboardScreen extends StatelessWidget {
+/// Modern Dashboard: Shows recent transactions, summary, and interactive access.
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  List<Map<String, dynamic>> _transactions = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecent();
+  }
+
+  Future<void> _fetchRecent() async {
+    setState(() => _loading = true);
+    final data = await TransactionService.fetchTransactions();
+    setState(() {
+      _transactions = data;
+      _loading = false;
+    });
+  }
+
+  void _goToAddTransaction() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (ctx) => TransactionEditScreen(onSave: _fetchRecent)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -515,22 +550,79 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('Dashboard'),
         backgroundColor: kSecondaryColor,
       ),
-      body: Center(
-        child: Card(
-          color: kCardColor,
-          margin: const EdgeInsets.all(32),
-          child: const Padding(
-            padding: EdgeInsets.all(32),
-            child: Text(
-              'Dashboard\n(Recent transactions & overview)',
-              style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: kAccentColor))
+          : RefreshIndicator(
+              color: kAccentColor,
+              onRefresh: _fetchRecent,
+              child: ListView(
+                padding: const EdgeInsets.all(12),
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: kCardColor,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [BoxShadow(color: Colors.black.withAlpha(31), blurRadius: 16)],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text("Recent Transactions",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: kAccentColor)),
+                        const SizedBox(height: 10),
+                        if (_transactions.isEmpty)
+                          const Padding(
+                              padding: EdgeInsets.only(top: 14),
+                              child: Text('No transactions', style: TextStyle(color: Colors.white54))),
+                        for (final t in _transactions.take(6))
+                          TransactionListTile(
+                            transaction: t,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (ctx) => TransactionEditScreen(
+                                    transaction: t,
+                                    onSave: _fetchRecent,
+                                  ),
+                                ),
+                              );
+                            },
+                            color: kSecondaryColor,
+                          ),
+                        const SizedBox(height: 6),
+                        if (_transactions.length > 6)
+                          Text(
+                            "... view all in Transactions tab",
+                            style: TextStyle(color: kAccentColor, fontSize: 13),
+                          )
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    color: kSecondaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                      child: Row(
+                        children: [
+                          Icon(Icons.pie_chart, color: kAccentColor, size: 32),
+                          SizedBox(width: 14),
+                          Expanded(
+                              child: Text(
+                                  "Track your spending with interactive charts, see more in Charts tab.",
+                                  style: TextStyle(color: Colors.white, fontSize: 16))),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _goToAddTransaction,
         tooltip: 'Add Transaction',
         child: const Icon(Icons.add),
       ),
@@ -541,10 +633,62 @@ class DashboardScreen extends StatelessWidget {
 ///
 /// TRANSACTIONS SCREEN
 /// PUBLIC_INTERFACE
-/// Minimal placeholder for Transactions list & management.
-///
-class TransactionsScreen extends StatelessWidget {
+/// Interactive transactions CRUD UI with dark theme.
+class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
+
+  @override
+  State<TransactionsScreen> createState() => _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends State<TransactionsScreen> {
+  List<Map<String, dynamic>> _transactions = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTransactions();
+  }
+
+  Future<void> _fetchTransactions() async {
+    setState(() => _loading = true);
+    final tx = await TransactionService.fetchTransactions();
+    setState(() {
+      _transactions = tx;
+      _loading = false;
+    });
+  }
+
+  void _goToAdd() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => TransactionEditScreen(
+          onSave: _fetchTransactions,
+        ),
+      ),
+    );
+  }
+
+  void _deleteTx(int id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kCardColor,
+        title: const Text("Confirm Deletion", style: TextStyle(color: Colors.white)),
+        content: const Text("Are you sure you want to delete this transaction?",
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await TransactionService.deleteTransaction(id);
+      await _fetchTransactions();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -553,24 +697,239 @@ class TransactionsScreen extends StatelessWidget {
         title: const Text('Transactions'),
         backgroundColor: kSecondaryColor,
       ),
-      body: Center(
-        child: Card(
-          color: kCardColor,
-          margin: const EdgeInsets.all(32),
-          child: const Padding(
-            padding: EdgeInsets.all(32),
-            child: Text(
-              'Transactions\n(Create, Edit, Delete)',
-              style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: kAccentColor))
+          : RefreshIndicator(
+              color: kAccentColor,
+              onRefresh: _fetchTransactions,
+              child: _transactions.isEmpty
+                  ? const Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 10, left: 8, right: 8),
+                      itemCount: _transactions.length,
+                      itemBuilder: (ctx, i) {
+                        final t = _transactions[i];
+                        return TransactionListTile(
+                          transaction: t,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (ctx) =>
+                                    TransactionEditScreen(transaction: t, onSave: _fetchTransactions),
+                              ),
+                            );
+                          },
+                          onDelete: () => _deleteTx(t['id'] as int),
+                          color: kCardColor,
+                        );
+                      },
+                    ),
             ),
-          ),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _goToAdd,
         tooltip: 'Add Transaction',
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+// PUBLIC_INTERFACE
+// Transaction Create/Edit Screen, shown as modal route for add/edit.
+class TransactionEditScreen extends StatefulWidget {
+  final Map<String, dynamic>? transaction;
+  final VoidCallback? onSave;
+
+  const TransactionEditScreen({super.key, this.transaction, this.onSave});
+
+  @override
+  State<TransactionEditScreen> createState() => _TransactionEditScreenState();
+}
+
+class _TransactionEditScreenState extends State<TransactionEditScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _descCtrl = TextEditingController();
+  final TextEditingController _amountCtrl = TextEditingController();
+  final TextEditingController _categoryCtrl = TextEditingController();
+  DateTime? _selectedDate;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.transaction != null) {
+      _descCtrl.text = widget.transaction!['description'] ?? '';
+      _amountCtrl.text = widget.transaction!['amount'].toString();
+      _categoryCtrl.text = widget.transaction!['category'] ?? '';
+      _selectedDate = DateTime.tryParse(widget.transaction!['date'] ?? '');
+    } else {
+      _selectedDate = DateTime.now();
+    }
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final double amount = double.tryParse(_amountCtrl.text.trim()) ?? 0.0;
+    final payload = {
+      "description": _descCtrl.text.trim(),
+      "amount": amount,
+      "category": _categoryCtrl.text.trim(),
+      "date": _selectedDate?.toIso8601String(),
+    };
+
+    bool didSucceed = false;
+    if (widget.transaction == null || widget.transaction!['id'] == null) {
+      // Create
+      final resp = await TransactionService.createTransaction(payload);
+      didSucceed = resp != null;
+    } else {
+      // Update
+      final resp =
+          await TransactionService.updateTransaction(widget.transaction!['id'], payload);
+      didSucceed = resp != null;
+    }
+
+    setState(() => _loading = false);
+
+    if (didSucceed) {
+      widget.onSave?.call();
+      Navigator.of(context).pop();
+    } else {
+      setState(() => _error = "Failed to save. Try again.");
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final BuildContext localContext = context; // capture before async gap
+    // All dialog/pickers receive the context pointer that is valid here.
+    final picked = await showDatePicker(
+      context: localContext,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2010),
+      lastDate: DateTime(2100),
+      builder: (dialogContext, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          dialogTheme: const DialogTheme(
+            backgroundColor: kCardColor,
+          ),
+          colorScheme: const ColorScheme.dark(
+            primary: kPrimaryColor,
+            surface: kCardColor,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    // Fully linter-compliant guard: check both mounted and picked.
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEdit = widget.transaction != null && widget.transaction!['id'] != null;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isEdit ? 'Edit Transaction' : 'Add Transaction'),
+        backgroundColor: kSecondaryColor,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _descCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "Description",
+                  labelStyle: TextStyle(color: kAccentColor),
+                  fillColor: kSecondaryColor,
+                  filled: true,
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? "Required" : null,
+              ),
+              const SizedBox(height: 18),
+              TextFormField(
+                controller: _amountCtrl,
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
+                decoration: const InputDecoration(
+                  labelText: "Amount",
+                  labelStyle: TextStyle(color: kAccentColor),
+                  fillColor: kSecondaryColor,
+                  filled: true,
+                  border: OutlineInputBorder(),
+                  prefixText: "\$ ",
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? "Required" : double.tryParse(v) == null
+                        ? "Not a valid amount"
+                        : null,
+              ),
+              const SizedBox(height: 18),
+              TextFormField(
+                controller: _categoryCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "Category",
+                  labelStyle: TextStyle(color: kAccentColor),
+                  fillColor: kSecondaryColor,
+                  filled: true,
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) => v == null || v.trim().isEmpty ? "Required" : null,
+              ),
+              const SizedBox(height: 18),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: "Date",
+                  labelStyle: TextStyle(color: kAccentColor),
+                  filled: true,
+                  fillColor: kSecondaryColor,
+                  border: OutlineInputBorder(),
+                ),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    _selectedDate != null
+                        ? "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}"
+                        : "Pick a date",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.date_range, color: kPrimaryColor),
+                    onPressed: _loading ? null : _pickDate,
+                  ),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: _loading ? null : _save,
+                icon: Icon(isEdit ? Icons.save : Icons.add, color: Colors.white),
+                label: Text(isEdit ? 'Update Transaction' : 'Add Transaction'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimaryColor,
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -579,10 +938,31 @@ class TransactionsScreen extends StatelessWidget {
 ///
 /// BUDGETS SCREEN
 /// PUBLIC_INTERFACE
-/// Minimal placeholder for Budgets management.
-///
-class BudgetsScreen extends StatelessWidget {
+/// Shows categorized budgets and their spending.
+class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
+  @override
+  State<BudgetsScreen> createState() => _BudgetsScreenState();
+}
+
+class _BudgetsScreenState extends State<BudgetsScreen> {
+  List<Map<String, dynamic>> _budgets = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBudgets();
+  }
+
+  Future<void> _fetchBudgets() async {
+    setState(() => _loading = true);
+    final b = await BudgetService.fetchBudgets();
+    setState(() {
+      _budgets = b;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -591,25 +971,30 @@ class BudgetsScreen extends StatelessWidget {
         title: const Text('Budgets'),
         backgroundColor: kSecondaryColor,
       ),
-      body: Center(
-        child: Card(
-          color: kCardColor,
-          margin: const EdgeInsets.all(32),
-          child: const Padding(
-            padding: EdgeInsets.all(32),
-            child: Text(
-              'Budgets\n(View, Add or Manage Budgets)',
-              style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: kAccentColor))
+          : RefreshIndicator(
+              color: kAccentColor,
+              onRefresh: _fetchBudgets,
+              child: ListView(
+                children: [
+                  const SizedBox(height: 12),
+                  ..._budgets.map(
+                    (b) => BudgetCard(
+                      category: b['category'] ?? "",
+                      spent: (b['spent'] ?? 0).toDouble(),
+                      limit: (b['limit'] ?? 1).toDouble(),
+                      color: kCardColor,
+                    ),
+                  ),
+                  if (_budgets.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: Center(child: Text("No budgets; Contact admin to set budgets.", style: TextStyle(color: Colors.white38))),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        tooltip: 'Add Budget',
-        child: const Icon(Icons.add_chart),
-      ),
     );
   }
 }
@@ -617,32 +1002,92 @@ class BudgetsScreen extends StatelessWidget {
 ///
 /// CHARTS SCREEN
 /// PUBLIC_INTERFACE
-/// Minimal placeholder for Analytics & Charts view.
-///
-class ChartsScreen extends StatelessWidget {
+/// Analytics: Spending categories with stylized charts.
+class ChartsScreen extends StatefulWidget {
   const ChartsScreen({super.key});
+  @override
+  State<ChartsScreen> createState() => _ChartsScreenState();
+}
+
+class _ChartsScreenState extends State<ChartsScreen> {
+  Map<String, dynamic> _analytics = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAnalytics();
+  }
+
+  Future<void> _fetchAnalytics() async {
+    setState(() => _loading = true);
+    final a = await BudgetService.fetchAnalytics();
+    setState(() {
+      _analytics = a;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final Map<String, double> categoryTotals =
+        (_analytics['category_totals'] as Map?)?.map((k, v) => MapEntry(k as String, (v as num).toDouble())) ??
+            {};
     return Scaffold(
       appBar: AppBar(
         title: const Text('Charts & Analytics'),
         backgroundColor: kSecondaryColor,
       ),
-      body: Center(
-        child: Card(
-          color: kCardColor,
-          margin: const EdgeInsets.all(32),
-          child: const Padding(
-            padding: EdgeInsets.all(32),
-            child: Text(
-              'Charts & Analytics\n(Spending visualizations)',
-              style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: kAccentColor))
+          : RefreshIndicator(
+              color: kAccentColor,
+              onRefresh: _fetchAnalytics,
+              child: ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  Card(
+                    color: kCardColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 6,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Spending Breakdown by Category",
+                            style:
+                                TextStyle(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                          const SizedBox(height: 15),
+                          if (categoryTotals.isNotEmpty)
+                            SpendingPieChart(
+                              categoryData: categoryTotals,
+                            )
+                          else
+                            const Text("No analytics data yet.",
+                                style: TextStyle(color: Colors.white38, fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    color: kSecondaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
+                      child: Text(
+                        "Visualize your monthly and categorical spending! Add transactions with category labels to see them analyzed here.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: kAccentColor, fontSize: 16),
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
