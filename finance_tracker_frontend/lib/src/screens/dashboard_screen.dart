@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../widgets/transaction_list.dart';
 import '../widgets/transaction_chart.dart';
+import '../widgets/error_banner.dart';
 import 'login_screen.dart';
 import 'transaction_crud_screen.dart';
 
@@ -69,14 +70,25 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          RefreshIndicator(
-            onRefresh: _refreshTx,
-            child: TransactionList(),
+          if (txProvider.errorMsg != null)
+            ErrorBanner(
+              message: txProvider.errorMsg ?? "Unknown error",
+              onClose: () => txProvider.clearError(),
+            ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                RefreshIndicator(
+                  onRefresh: _refreshTx,
+                  child: TransactionList(),
+                ),
+                TransactionChart(),
+              ],
+            ),
           ),
-          TransactionChart(),
         ],
       ),
       floatingActionButton: FloatingActionButton(

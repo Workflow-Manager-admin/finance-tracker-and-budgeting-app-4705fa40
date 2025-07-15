@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/error_banner.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 
@@ -16,7 +17,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   String _username = '';
   String _password = '';
-  String? _error;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +35,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (authProvider.errorMsg != null)
+                      ErrorBanner(
+                        message: authProvider.errorMsg ?? "Unknown error",
+                        onClose: () => authProvider.clearError(),
+                      ),
                     Text('Register', style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 22),
                     TextFormField(
@@ -50,11 +55,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (val) => val == null || val.isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: 24),
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                      ),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -65,10 +65,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 if (_formKey.currentState?.validate() ?? false) {
                                   final success =
                                       await authProvider.register(_username, _password);
-                                  if (!success) {
-                                    setState(() => _error = 'Failed to register');
-                                  } else {
-                                    setState(() => _error = null);
+                                  if (success) {
+                                    authProvider.clearError();
                                     Navigator.pushReplacementNamed(context, DashboardScreen.routeName);
                                   }
                                 }

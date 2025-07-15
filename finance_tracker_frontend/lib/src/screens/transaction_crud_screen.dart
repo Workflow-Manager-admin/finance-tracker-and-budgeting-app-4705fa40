@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/transaction_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
+import '../widgets/error_banner.dart';
 import 'dashboard_screen.dart';
 
 class TransactionCrudScreen extends StatefulWidget {
@@ -20,7 +21,6 @@ class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
   String _category = '';
   double _amount = 0.0;
   DateTime _date = DateTime.now();
-  String? _error;
 
   @override
   void initState() {
@@ -39,6 +39,7 @@ class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     _formKey.currentState!.save();
+    txProvider.clearError();
     final tx = TransactionModel(
       id: widget.transaction?.id,
       title: _title,
@@ -55,29 +56,28 @@ class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
     }
     if (success) {
       Navigator.pushReplacementNamed(context, DashboardScreen.routeName);
-    } else {
-      setState(() => _error = 'Failed to save transaction');
     }
+    // If error, will be shown via error banner
   }
 
   Future<void> _delete() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final txProvider = Provider.of<TransactionProvider>(context, listen: false);
+    txProvider.clearError();
     final id = widget.transaction?.id;
     if (id == null) return;
     final deleted = await txProvider.deleteTransaction(token: authProvider.token!, txId: id);
     if (deleted) {
       Navigator.pushReplacementNamed(context, DashboardScreen.routeName);
-    } else {
-      setState(() {
-        _error = 'Failed to delete transaction';
-      });
     }
+    // If error, will be shown via error banner
   }
 
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.transaction != null;
+    final txProvider = Provider.of<TransactionProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Transaction' : 'Add Transaction'),
@@ -103,6 +103,11 @@ class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                 child: ListView(
                   shrinkWrap: true,
                   children: [
+                    if (txProvider.errorMsg != null)
+                      ErrorBanner(
+                        message: txProvider.errorMsg ?? "Unknown error",
+                        onClose: () => txProvider.clearError(),
+                      ),
                     TextFormField(
                       initialValue: _title,
                       decoration: const InputDecoration(labelText: 'Title'),
@@ -134,11 +139,6 @@ class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                       onDateSaved: (val) => _date = val,
                     ),
                     const SizedBox(height: 16),
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                      ),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
