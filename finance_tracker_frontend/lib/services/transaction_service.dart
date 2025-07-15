@@ -28,55 +28,92 @@ class TransactionService {
 
   /// PUBLIC_INTERFACE
   /// Creates a new transaction.
+  /// - Resolves category name to category_id (fetches categories or creates if needed)
+  /// - Sends correct field names and types according to backend schema
   static Future<Map<String, dynamic>?> createTransaction(Map<String, dynamic> data) async {
-    // The backend expects: amount (float), type ('income' or 'expense'), category_id (int), optional description, timestamp
-    // The frontend currently sends: description, amount, category (string), date (string ISO)
     final url = Uri.parse('$apiBaseUrl/transactions/');
     final headers = await AuthService.getAuthHeader();
     headers["Content-Type"] = "application/json";
 
-    // We need to get category_id (int) and type ('income' or 'expense') for a valid backend call
-    // If category is a string, fetch all categories, find id, else fallback to category = null (backend required)
-    // For now, assume category_id = 1 and type by amount sign (positive=income, negative=expense), but print debug.
+    // Helper to fetch category_id by name, creating if needed
+    Future<int?> resolveCategoryId(String? catName) async {
+      if (catName == null || catName.trim().isEmpty) return null;
+      final catUrl = Uri.parse('$apiBaseUrl/categories/');
+      try {
+        // 1. Fetch all categories
+        final resp = await http.get(catUrl, headers: headers);
+        if (resp.statusCode == 200) {
+          final List cats = json.decode(resp.body);
+          final found = cats.firstWhere(
+            (c) =>
+                c is Map &&
+                (c["name"] as String).trim().toLowerCase() ==
+                    catName.trim().toLowerCase(),
+            orElse: () => null,
+          );
+          if (found != null && found["id"] != null) {
+            return found["id"] as int;
+          }
+        }
+        // 2. If not found, try to create
+        final newCatResp = await http.post(
+          catUrl,
+          headers: headers,
+          body: json.encode({"name": catName}),
+        );
+        if (newCatResp.statusCode == 200 || newCatResp.statusCode == 201) {
+          final d = json.decode(newCatResp.body);
+          return d["id"] as int?;
+        }
+      } catch (e) {
+        debugPrint("[TransactionService] Error resolving category id: $e");
+      }
+      // fallback
+      return null;
+    }
 
-    int? categoryId;
+    int? categoryId = 1;
     String? type;
+    // Compute type from amount
     if (data.containsKey("amount")) {
       final double amt = (data["amount"] as num).toDouble();
       type = amt >= 0 ? "income" : "expense";
     }
-    // Attempt to extract category id if possible, otherwise fallback to 1 (should ideally resolve by fetching).
-    // SAFE fallback (fixable by actual fetch/categories lookup):
-    categoryId = 1;
+    // Try to resolve category_id dynamically and await
     if (data.containsKey("category")) {
-      // Could be future: fetch /categories/, match by name, assign ID
-      // TODO: Category resolution for production; for demo, fallback to 1
+      final resolvedId = await resolveCategoryId(data["category"]);
+      if (resolvedId != null) {
+        categoryId = resolvedId;
+      }
     }
+
+    // Rename frontend "date" to "timestamp" for backend
+    String? timestamp = data.containsKey("date")
+        ? data["date"]
+        : (data.containsKey("timestamp") ? data["timestamp"] : null);
 
     final backendPayload = {
       "amount": data["amount"],
       "type": type,
       "category_id": categoryId,
       "description": data["description"],
-      "timestamp": data["date"], // Backend expects 'timestamp'
+      "timestamp": timestamp,
     };
 
-    final resp = await http.post(url, headers: headers, body: json.encode(backendPayload));
-    // The backend returns a 200 status and transaction object on success
-    if (resp.statusCode == 201 || resp.statusCode == 200) {
-      return json.decode(resp.body) as Map<String, dynamic>;
-    } else {
-      // For diagnostics, but avoid print in production
-      // ignore: avoid_print
-      // print("[TransactionService] createTransaction failed: ${resp.statusCode} ${resp.body}");
-      // Instead, use debugPrint for error reporting
-      if (resp.body.isNotEmpty) {
-        try {
-          // ignore: avoid_print
-          // debugPrint is preferred for Flutter logs
-          debugPrint("[TransactionService] createTransaction failed: ${resp.statusCode} ${resp.body}");
-        } catch (_) {}
+    try {
+      final resp = await http.post(url, headers: headers, body: json.encode(backendPayload));
+
+      if (resp.statusCode == 201 || resp.statusCode == 200) {
+        return json.decode(resp.body) as Map<String, dynamic>;
+      } else {
+        if (resp.body.isNotEmpty) {
+          try {
+            debugPrint("[TransactionService] createTransaction failed: ${resp.statusCode} ${resp.body}");
+          } catch (_) {}
+        }
       }
+    } catch (e) {
+      debugPrint("[TransactionService] createTransaction: uncaught error $e");
     }
     return null;
   }

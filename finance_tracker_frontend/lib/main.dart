@@ -1,4 +1,3 @@
- // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 import 'widgets/finance_widgets.dart';
@@ -565,8 +564,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 ///
-// (remove these duplicate import directives)
-
+///
 /// DASHBOARD SCREEN
 /// PUBLIC_INTERFACE
 /// Modern Dashboard: Shows recent transactions, summary, and interactive access.
@@ -903,10 +901,10 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
   }
 
   Future<void> _pickDate() async {
-    // Call showDatePicker with this context (not storing context across gap)
-    // ignore: use_build_context_synchronously
+    // Store context in local variable to avoid use_build_context_synchronously lint
+    final localContext = context;
     final picked = await showDatePicker(
-      context: context,
+      context: localContext,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2010),
       lastDate: DateTime(2100),
