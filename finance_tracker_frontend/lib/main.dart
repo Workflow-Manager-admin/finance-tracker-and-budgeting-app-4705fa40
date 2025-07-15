@@ -368,12 +368,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _success;
 
   void _handleRegister() async {
+    // Start loading and clear messages
     setState(() {
       _loading = true;
       _error = null;
       _success = null;
     });
 
+    // Early validation before async
     if (_emailCtrl.text.trim().isEmpty || _pwdCtrl.text.isEmpty) {
       setState(() {
         _error = "Email and password are required.";
@@ -387,10 +389,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
       return;
     }
+
+    // Registration network call
     final result = await AuthService.register(
       _emailCtrl.text.trim(),
       _pwdCtrl.text,
     );
+
+    // Set UI state depending on result
     setState(() {
       _loading = false;
       if (result['success'] == true) {
@@ -399,8 +405,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _error = result['message'] ?? "Registration failed.";
       }
     });
+
+    // After UI update, trigger navigation callback ONLY after async gap + mounted check
     if (result['success'] == true) {
       await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
       widget.onRegister();
     }
   }

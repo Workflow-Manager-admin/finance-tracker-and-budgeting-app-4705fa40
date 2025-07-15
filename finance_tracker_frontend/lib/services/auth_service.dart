@@ -12,6 +12,16 @@ class AuthService {
   // Update this to point to your FastAPI backend base URL:
   static const String apiBaseUrl = "http://10.0.2.2:8000";
 
+// -- NETWORK DEBUG INFO (Not part of build; for dev diagnostics only) --
+// Backend running location: https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001
+// apiBaseUrl above is set to: http://10.0.2.2:8000
+// For Android emulator:       http://10.0.2.2:<PORT> (maps to localhost on dev machine)
+// For iOS simulator:          http://localhost:<PORT> (physical device: use LAN IP or tunneled URL)
+// To match backend, set      apiBaseUrl to: https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001
+// Example registration URL:  https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001/auth/register
+// Example health check:      https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001/
+//
+
   /// PUBLIC_INTERFACE
   /// Attempts user login with API, returns true if successful, false otherwise.
   static Future<Map<String, dynamic>> login(String email, String password) async {
