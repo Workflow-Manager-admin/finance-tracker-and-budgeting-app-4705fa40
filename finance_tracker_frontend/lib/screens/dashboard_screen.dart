@@ -26,7 +26,7 @@ class DashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 12.0),
             children: [
               Card(
-                surfaceTintColor: Theme.of(context).colorScheme.surface.withOpacity(0.05),
+                surfaceTintColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.05),
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
