@@ -32,9 +32,22 @@ class AuthService {
     // Backend expects JSON body: {email, password}
     final url = Uri.parse("$apiBaseUrl/auth/login");
     final body = json.encode({"email": email, "password": password});
+
+    String friendlyError(dynamic v) {
+      // Robustly convert error message/list/other to user-facing string
+      if (v == null) return "Login failed.";
+      if (v is String) return v;
+      if (v is List) return v.map((item) => friendlyError(item)).join('\n');
+      if (v is Map && v.containsKey('msg')) {
+        // fastapi validation error items
+        return v['msg'].toString();
+      }
+      return v.toString();
+    }
+
     try {
-      final resp = await http.post(url,
-          headers: {"Content-Type": "application/json"}, body: body)
+      final resp = await http
+          .post(url, headers: {"Content-Type": "application/json"}, body: body)
           .timeout(const Duration(seconds: 12));
 
       // Expect 200 and an access_token in the response body
@@ -47,7 +60,10 @@ class AuthService {
             return {"success": true, "message": "Login successful."};
           } else if (data['detail'] != null) {
             debugPrint("[AuthService] Login failed: ${data['detail']}");
-            return {"success": false, "message": data['detail']};
+            return {
+              "success": false,
+              "message": friendlyError(data['detail'])
+            };
           }
           debugPrint("[AuthService] Login malformed response: $data");
           return {"success": false, "message": "Malformed response from server."};
@@ -64,7 +80,11 @@ class AuthService {
         try {
           final err = json.decode(resp.body);
           debugPrint("[AuthService] Login error: $err");
-          return {"success": false, "message": err['detail'] ?? "Login failed."};
+          dynamic errDetail = err['detail'] ?? err['error'] ?? err;
+          return {
+            "success": false,
+            "message": friendlyError(errDetail)
+          };
         } catch (ex) {
           debugPrint("[AuthService] Login (bad server error response): $ex, status: ${resp.statusCode}");
           return {"success": false, "message": "Invalid credentials or server error."};

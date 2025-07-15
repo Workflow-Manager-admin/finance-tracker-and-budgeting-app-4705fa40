@@ -922,8 +922,9 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
         child: child!,
       ),
     );
-    // Fully linter-compliant guard: check both mounted and picked.
-    if (picked != null && mounted) {
+    // Per Flutter lints: check mounted immediately after await before using picked/context/state
+    if (!mounted) return;
+    if (picked != null) {
       setState(() => _selectedDate = picked);
     }
   }
