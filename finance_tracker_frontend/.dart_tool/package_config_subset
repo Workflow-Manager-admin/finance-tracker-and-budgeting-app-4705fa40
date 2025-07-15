@@ -30,6 +30,10 @@ flutter_lints
 3.5
 file:///home/kavia/.pub-cache/hosted/pub.dev/flutter_lints-5.0.0/
 file:///home/kavia/.pub-cache/hosted/pub.dev/flutter_lints-5.0.0/lib/
+flutter_riverpod
+2.17
+file:///home/kavia/.pub-cache/hosted/pub.dev/flutter_riverpod-2.6.1/
+file:///home/kavia/.pub-cache/hosted/pub.dev/flutter_riverpod-2.6.1/lib/
 leak_tracker
 3.2
 file:///home/kavia/.pub-cache/hosted/pub.dev/leak_tracker-10.0.8/
@@ -62,6 +66,10 @@ path
 3.4
 file:///home/kavia/.pub-cache/hosted/pub.dev/path-1.9.1/
 file:///home/kavia/.pub-cache/hosted/pub.dev/path-1.9.1/lib/
+riverpod
+2.17
+file:///home/kavia/.pub-cache/hosted/pub.dev/riverpod-2.6.1/
+file:///home/kavia/.pub-cache/hosted/pub.dev/riverpod-2.6.1/lib/
 source_span
 3.1
 file:///home/kavia/.pub-cache/hosted/pub.dev/source_span-1.10.1/
@@ -70,6 +78,10 @@ stack_trace
 3.4
 file:///home/kavia/.pub-cache/hosted/pub.dev/stack_trace-1.12.1/
 file:///home/kavia/.pub-cache/hosted/pub.dev/stack_trace-1.12.1/lib/
+state_notifier
+2.12
+file:///home/kavia/.pub-cache/hosted/pub.dev/state_notifier-1.0.0/
+file:///home/kavia/.pub-cache/hosted/pub.dev/state_notifier-1.0.0/lib/
 stream_channel
 3.3
 file:///home/kavia/.pub-cache/hosted/pub.dev/stream_channel-2.1.4/

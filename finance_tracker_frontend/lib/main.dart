@@ -1,54 +1,105 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'screens/dashboard_screen.dart';
+import 'screens/transactions_screen.dart';
+import 'screens/budget_screen.dart';
+import 'screens/categories_screen.dart';
+import 'screens/account_screen.dart';
+
+// PUBLIC_INTERFACE
 void main() {
-  runApp(const MyApp());
+  /// App Entry: Wrap in ProviderScope for Riverpod state management
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  /// Root MaterialApp of the application, with route configuration.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AI Build Tool',
+      title: 'Finance Tracker',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.dark(
+          primary: Color(0xFFD21947),    // Project's primary color
+          secondary: Color(0xFFE8F2E8),  // Project's secondary color
+          tertiary: Color(0xFF05FFEE),   // Project's accent color
+        ),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'finance_tracker_frontend'),
+      home: const MainNavigation(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+/// MainNavigation manages the bottom navigation bar and tab switching.
+/// Screens: Dashboard, Transactions, Budget, Categories, Account.
+class MainNavigation extends ConsumerStatefulWidget {
+  const MainNavigation({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MainNavigationState extends ConsumerState<MainNavigation> {
+  int _selectedIndex = 0;
+
+  /// List of top-level screens corresponding to the navigation bar.
+  static final List<Widget> _screens = <Widget>[
+    DashboardScreen(),
+    TransactionsScreen(),
+    BudgetScreen(),
+    CategoriesScreen(),
+    AccountScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  /// BottomNavigationBar for main app navigation.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'finance_tracker_frontend App is being generated...',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
-          ],
-        ),
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onItemTapped,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.list_alt_outlined),
+            selectedIcon: Icon(Icons.list_alt),
+            label: 'Transactions',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.pie_chart_outline),
+            selectedIcon: Icon(Icons.pie_chart),
+            label: 'Budget',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.category_outlined),
+            selectedIcon: Icon(Icons.category),
+            label: 'Categories',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Account',
+          ),
+        ],
+        // Set consistent bar background using theme.
+        backgroundColor: Theme.of(context).bottomAppBarColor,
       ),
     );
   }
