@@ -9,8 +9,9 @@ class AuthService {
   // Instance for secure storage
   static const _storage = FlutterSecureStorage();
 
-  // Update this to point to your FastAPI backend base URL:
-  static const String apiBaseUrl = "https://02f0de475628.ngrok-free.app";
+  // Update this to your current ngrok/public backend base URL:
+  // IMPORTANT: Set this to the currently exposed backend API. Update when ngrok restarts!
+  static const String apiBaseUrl = "https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001";
 
 // -- NETWORK DEBUG INFO (Not part of build; for dev diagnostics only) --
 // Backend running location: https://vscode-internal-4831-beta.beta01.cloud.kavia.ai:3001
@@ -23,8 +24,11 @@ class AuthService {
 //
 
   /// PUBLIC_INTERFACE
-  /// Attempts user login with API, returns true if successful, false otherwise.
+  /// Attempts user login with API.
+  /// Returns: { "success": true, "message": "..."} on success, or {"success": false, "message": "..."} on failure.
+  /// On success, saves access_token in secure storage for future requests.
   static Future<Map<String, dynamic>> login(String email, String password) async {
+    // Backend expects JSON body: {email, password}
     final url = Uri.parse("$apiBaseUrl/auth/login");
     final body = json.encode({"email": email, "password": password});
     try {
@@ -32,15 +36,31 @@ class AuthService {
           headers: {"Content-Type": "application/json"}, body: body)
           .timeout(const Duration(seconds: 12));
 
+      // Expect 200 and an access_token in the response body
       if (resp.statusCode == 200) {
-        var data = json.decode(resp.body);
-        if (data['access_token'] != null) {
-          await _setJwtToken(data['access_token']);
-          return {"success": true, "message": "Login successful."};
+        try {
+          final data = json.decode(resp.body);
+          if (data['access_token'] != null) {
+            await _setJwtToken(data['access_token']);
+            return {"success": true, "message": "Login successful."};
+          } else if (data['detail'] != null) {
+            return {"success": false, "message": data['detail']};
+          }
+          return {"success": false, "message": "Malformed response from server."};
+        } catch (e) {
+          return {"success": false, "message": "Failed to parse server response."};
         }
-        return {"success": false, "message": data['detail'] ?? "Unknown error"};
+      } else if (resp.statusCode == 401) {
+        // Unauthorized (bad credentials)
+        return {"success": false, "message": "Invalid credentials."};
       } else {
-        return {"success": false, "message": "Invalid credentials or server error."};
+        // Try to get error details from server if available
+        try {
+          final err = json.decode(resp.body);
+          return {"success": false, "message": err['detail'] ?? "Login failed."};
+        } catch (_) {
+          return {"success": false, "message": "Invalid credentials or server error."};
+        }
       }
     } on TimeoutException {
       return {"success": false, "message": "Request timed out. Please try again."};
@@ -104,5 +124,16 @@ class AuthService {
   // Helper: get JWT from secure storage.
   static Future<String?> _getJwtToken() async {
     return await _storage.read(key: "jwt_token");
+  }
+
+  /// PUBLIC_INTERFACE
+  /// Get Authorization header for authenticated requests.
+  /// Usage: pass as part of headers in backend calls.
+  static Future<Map<String, String>> getAuthHeader() async {
+    final token = await _getJwtToken();
+    if (token != null && token.isNotEmpty) {
+      return {"Authorization": "Bearer $token"};
+    }
+    return {};
   }
 }

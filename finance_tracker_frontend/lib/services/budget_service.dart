@@ -10,15 +10,10 @@ class BudgetService {
   /// PUBLIC_INTERFACE
   /// Fetches budgets for authenticated user.
   static Future<List<Map<String, dynamic>>> fetchBudgets() async {
-    final token = await AuthService.getJwtToken();
     final url = Uri.parse('$apiBaseUrl/budgets');
-    final resp = await http.get(
-      url,
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json"
-      },
-    );
+    final headers = await AuthService.getAuthHeader();
+    headers["Content-Type"] = "application/json";
+    final resp = await http.get(url, headers: headers);
     if (resp.statusCode == 200) {
       try {
         final List<dynamic> list = json.decode(resp.body);
@@ -33,15 +28,10 @@ class BudgetService {
   /// PUBLIC_INTERFACE
   /// Fetch spending analytics (e.g., per category breakdowns).
   static Future<Map<String, dynamic>> fetchAnalytics() async {
-    final token = await AuthService.getJwtToken();
     final url = Uri.parse('$apiBaseUrl/analytics/spending');
-    final resp = await http.get(
-      url,
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json"
-      },
-    );
+    final headers = await AuthService.getAuthHeader();
+    headers["Content-Type"] = "application/json";
+    final resp = await http.get(url, headers: headers);
     if (resp.statusCode == 200) {
       return json.decode(resp.body) as Map<String, dynamic>;
     }

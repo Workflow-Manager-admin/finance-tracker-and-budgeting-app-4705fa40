@@ -390,12 +390,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Await the async registration and after it's done, use a post-frame callback
+    // Await the async registration and after it's done, check if widget is mounted before navigation
     final didSucceed = await _performRegister();
-    if (didSucceed && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onRegister();
-      });
+    if (!mounted) return;
+    if (didSucceed) {
+      widget.onRegister();
     }
   }
 
@@ -405,6 +404,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _emailCtrl.text.trim(),
       _pwdCtrl.text,
     );
+    if (!mounted) return false; // Prevent context/member use after async gap
 
     final bool didSucceed = result['success'] == true;
     setState(() {
